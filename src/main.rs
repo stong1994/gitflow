@@ -14,6 +14,7 @@ fn main() {
     if has_uncommitted_changes() {
         commit();
     }
+    push();
 }
 
 fn has_file_added() -> bool {
@@ -80,6 +81,34 @@ fn commit() {
                 KeyCode::Char('q') => quit(),
                 _ => {
                     println!("Invalid input. Please press 'y' to commit changes or 'q' to quit.",);
+                }
+            }
+        }
+    }
+}
+fn push() {
+    let remotes = get_remote_names();
+    if remotes.is_empty() {
+        report_error("No remote repository found.");
+    } else if remotes.len() == 1 {
+        git_push(&remotes[0]);
+    } else {
+        loop {
+            println!("Please choose a remote to push to:");
+            for (i, remote) in remotes.iter().enumerate() {
+                println!("{}: {}", i + 1, remote);
+            }
+            let mut input = String::new();
+            io::stdin()
+                .read_line(&mut input)
+                .expect("Failed to read line");
+            match input.trim().parse::<usize>() {
+                Ok(n) if n > 0 && n <= remotes.len() => {
+                    git_push(&remotes[n - 1]);
+                    break;
+                }
+                _ => {
+                    println!("Invalid input. Please try again.");
                 }
             }
         }
@@ -218,6 +247,38 @@ fn has_uncommitted_changes() -> bool {
         .expect("Failed to execute git command");
 
     !output.status.success()
+}
+
+fn get_remote_names() -> Vec<String> {
+    let output = Command::new("git")
+        .arg("remote")
+        .output()
+        .expect("Failed to execute git command");
+
+    if output.status.success() {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        stdout.split_whitespace().map(String::from).collect()
+    } else {
+        eprintln!("Failed to get remote names.");
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        eprintln!("Error:\n{}", stderr);
+        vec![]
+    }
+}
+
+fn git_push(remote: &str) {
+    let output = Command::new("git")
+        .arg("push")
+        .arg(remote)
+        .output()
+        .expect("Failed to execute git push");
+    if output.status.success() {
+        println!("Pushed to {} successfully.", remote);
+    } else {
+        eprintln!("Failed to push to {}.", remote);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        eprintln!("Error:\n{}", stderr);
+    }
 }
 fn execute_commit_command(command: &str) {
     println!("Executing: \n\t {}", command);
