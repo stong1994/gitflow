@@ -88,6 +88,7 @@ fn commit() {
     }
 }
 
+static PUSH_PROMPT: &str = "==> There are unpushed commits. Please choose an branch:\n\t- [Y]: Push to remote repository.\n\t- [M]: Push to remote repository.\n\t- [Q]: Quit.\n";
 fn push() {
     let remotes = get_remote_names();
     if remotes.is_empty() {
@@ -269,13 +270,51 @@ fn get_remote_names() -> Vec<String> {
         vec![]
     }
 }
+
 fn get_branch_name() -> String {
-    println!("Please enter the branch name:");
-    let mut branch = String::new();
-    io::stdin()
-        .read_line(&mut branch)
-        .expect("Failed to read line");
-    branch.trim().to_string()
+    let local_branch = get_current_branch();
+    println!("==> There are unpushed commits. Please choose an branch:\n\t- [Y]: {}.\n\t- [M]: Input branch manually.\n\t- [Q]: Quit.\n", local_branch);
+
+    enable_raw_input();
+    loop {
+        if let Ok(Event::Key(event)) = read() {
+            match event.code {
+                KeyCode::Char('y') => {
+                    return local_branch;
+                }
+                KeyCode::Char('m') => {
+                    disable_raw_input();
+
+                    let mut branch = String::new();
+                    io::stdin()
+                        .read_line(&mut branch)
+                        .expect("Failed to read line");
+                    return branch;
+                }
+                _ => {
+                    println!("Invalid input. Please try again.");
+                    return get_branch_name();
+                }
+            }
+        }
+    }
+}
+fn get_current_branch() -> String {
+    let output = Command::new("git")
+        .arg("rev-parse")
+        .arg("--abbrev-ref")
+        .arg("HEAD")
+        .output()
+        .expect("Failed to execute git command");
+    if output.status.success() {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        stdout.trim().to_string()
+    } else {
+        eprintln!("Failed to get current branch.");
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        eprintln!("Error:\n{}", stderr);
+        String::new()
+    }
 }
 
 fn git_push(remote: &str, branch: &str) {
