@@ -1,7 +1,7 @@
 use crossterm::event::{read, Event, KeyCode};
 use crossterm::terminal::disable_raw_mode;
 use crossterm::{event::poll, terminal::enable_raw_mode};
-use std::process::Command;
+use std::process::{Command, Output};
 use std::{env, io, process};
 
 fn main() {
@@ -32,7 +32,7 @@ fn add_files() {
     }
 
     println!("==> There are files ready to be added.");
-    println!("Please choose an option:\n  - [Y]: Add all files\n  - [Q]: Quit");
+    println!("Please choose an option:\n\t - [Y]: Add all files\n\t- [Q]: Quit");
     enable_raw_input();
 
     loop {
@@ -219,18 +219,27 @@ fn has_uncommitted_changes() -> bool {
 
     !output.status.success()
 }
-
 fn execute_commit_command(command: &str) {
-    execute_command(command);
-    println!("executing: \n\t {}\n", command);
+    println!("Executing: \n\t {}", command);
+    let output = execute_command(command);
+
+    if output.status.success() {
+        println!("Command executed successfully.");
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        println!("Output:\n{}", stdout);
+    } else {
+        eprintln!("Command execution failed.");
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        eprintln!("Error:\n{}", stderr);
+    }
 }
 
-fn execute_command(command: &str) {
+fn execute_command(command: &str) -> Output {
     Command::new("sh")
         .arg("-c")
         .arg(command)
         .output()
-        .expect("Failed to execute command");
+        .expect("Failed to execute command")
 }
 fn enable_raw_input() {
     enable_raw_mode().expect("Failed to enable raw mode");
