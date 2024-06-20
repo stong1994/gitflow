@@ -46,10 +46,7 @@ fn add() {
                         add_files(true);
                         break;
                     }
-                    KeyCode::Char('q') => {
-                        println!("Operation cancelled.");
-                        process::exit(0);
-                    }
+                    KeyCode::Char('q') => quit(),
                     _ => {
                         report_ok(
                             "Invalid input. Please press 'y' to add all files or 'q' to quit.",
@@ -91,7 +88,7 @@ fn commit() {
 
                         break;
                     }
-                    KeyCode::Char('q') => report_ok("Quiting..."),
+                    KeyCode::Char('q') => quit(),
                     _ => {
                         println!(
                             "Invalid input. Please press 'y' to commit changes or 'q' to quit.",
@@ -139,6 +136,11 @@ fn check_in_git_repo() {
 fn report_error(msg: &str) {
     println!("{}", msg);
     process::exit(1);
+}
+
+fn quit() {
+    println!("Quiting...");
+    process::exit(0);
 }
 
 fn report_ok(msg: &str) {
@@ -221,7 +223,6 @@ fn aicommit() {
             }
         }
     }
-    println!("{}", String::from_utf8_lossy(&output.stdout));
 }
 
 fn has_uncommitted_changes() -> bool {
