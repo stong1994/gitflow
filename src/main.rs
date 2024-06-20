@@ -26,48 +26,13 @@ fn has_added() -> bool {
     !output.stdout.is_empty()
 }
 
-// fn add() {
-//     let output_status = Command::new("git")
-//         .arg("status")
-//         .arg("--porcelain")
-//         .output()
-//         .expect("git status failed");
-//     if output_status.stdout.is_empty() {
-//         report_error("There is nothing need to push.");
-//     }
-//     println!("There are files ready to be added.");
-//     println!("Type y to add all files or type q to quit:");
-//     enable_raw_input();
-//     loop {
-//         if poll(std::time::Duration::from_millis(100)).unwrap() {
-//             if let Event::Key(event) = read().unwrap() {
-//                 match event.code {
-//                     KeyCode::Char('y') => {
-//                         add_files(true);
-//                         break;
-//                     }
-//                     KeyCode::Char('q') => quit(),
-//                     _ => {
-//                         report_ok(
-//                             "Invalid input. Please press 'y' to add all files or 'q' to quit.",
-//                         );
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
 fn add() {
-    let output_status = Command::new("git")
-        .arg("status")
-        .arg("--porcelain")
-        .output()
-        .expect("git status failed");
-    if output_status.stdout.is_empty() {
+    if !any_changes() {
         report_error("There is nothing need to push.");
     }
-    println!("There are files ready to be added.");
-    println!("Type y to add all files or type q to quit:");
+
+    println!("==> There are files ready to be added.");
+    println!("Please choose an option:\n  - [Y]: Add all files\n  - [Q]: Quit");
     enable_raw_input();
 
     loop {
@@ -85,11 +50,8 @@ fn add() {
         }
     }
 }
-static COMMIT_PROMPT: &str = r#"There are uncommitted changes. Type:
-  - y: use aicommit to commit the files.
-  - n: put commit message manually.
-  - q: quit.
-"#;
+
+static COMMIT_PROMPT: &str = "==> There are uncommitted changes. Please choose an option:\n  - [Y]: Use AICommit to commit the files.\n  - [N]: Enter commit message manually.\n  - [Q]: Quit.\n";
 
 fn commit() {
     println!("{}", COMMIT_PROMPT);
@@ -123,41 +85,6 @@ fn commit() {
         }
     }
 }
-// fn commit() {
-//     println!("{}", COMMIT_PROMPT);
-//     enable_raw_input();
-//     loop {
-//         if poll(std::time::Duration::from_millis(100)).unwrap() {
-//             if let Event::Key(event) = read().unwrap() {
-//                 match event.code {
-//                     KeyCode::Char('y') => {
-//                         aicommit();
-//                         break;
-//                     }
-//                     KeyCode::Char('n') => {
-//                         disable_raw_input();
-//                         println!("Please input commit message:");
-//
-//                         let mut commit_message = String::new();
-//                         io::stdin()
-//                             .read_line(&mut commit_message)
-//                             .expect("Failed to read line");
-//
-//                         commit_files(&commit_message);
-//
-//                         break;
-//                     }
-//                     KeyCode::Char('q') => quit(),
-//                     _ => {
-//                         println!(
-//                             "Invalid input. Please press 'y' to commit changes or 'q' to quit.",
-//                         );
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
 
 fn check_git_installed() {
     if !check_command_installed("git") {
@@ -232,20 +159,11 @@ fn aicommit() {
         .output()
         .expect("Failed to execute aicommit");
     let command = String::from_utf8_lossy(&output.stdout);
-    println!(
-        r#"command is :
-    ```
-    {}
-    ```
-    You can type: 
-    - y : execute .
-    - r : re-generate command.
-    - m : manually input commit message.
-    - q : quit.
-    "#,
-        command
-    );
 
+    println!(
+    "==> AICommit generated the following command:\n\n{}\n\nPlease choose an option:\n  - [Y]: Execute the command\n  - [R]: Regenerate command\n  - [M]: Enter commit message manually\n  - [Q]: Quit",
+    command
+);
     enable_raw_input();
     loop {
         if poll(std::time::Duration::from_millis(100)).unwrap() {
@@ -283,13 +201,20 @@ fn aicommit() {
         }
     }
 }
-
+fn any_changes() -> bool {
+    let output = Command::new("git")
+        .arg("status")
+        .arg("--porcelain")
+        .output()
+        .expect("git status failed");
+    !output.stdout.is_empty()
+}
 fn has_uncommitted_changes() -> bool {
     let output = Command::new("git")
         .arg("diff")
         .arg("--cached")
         .arg("--exit-code")
-        .output()
+        .output() // can't use status() directly as it will output the git repsponse
         .expect("Failed to execute git command");
 
     !output.status.success()
