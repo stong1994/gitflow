@@ -29,7 +29,8 @@ fn has_file_added() -> bool {
 
 fn add_files() {
     if !any_changes() {
-        report_error("There is nothing need to push.");
+        return;
+        // report_error("There is nothing need to push.");
     }
 
     println!("==> There are files ready to be added.");
