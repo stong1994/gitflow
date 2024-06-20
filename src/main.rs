@@ -51,7 +51,7 @@ fn add_files() {
     }
 }
 
-static COMMIT_PROMPT: &str = "==> There are uncommitted changes. Please choose an option:\n  - [Y]: Use AICommit to commit the files.\n  - [N]: Enter commit message manually.\n  - [Q]: Quit.\n";
+static COMMIT_PROMPT: &str = "==> There are uncommitted changes. Please choose an option:\n  - [Y]: Use AICommit to commit the files.\n  - [M]: Enter commit message manually.\n  - [Q]: Quit.\n";
 
 fn commit() {
     println!("{}", COMMIT_PROMPT);
@@ -64,7 +64,7 @@ fn commit() {
                     aicommit();
                     break;
                 }
-                KeyCode::Char('n') => {
+                KeyCode::Char('m') => {
                     disable_raw_input();
                     println!("Please input commit message:");
 
