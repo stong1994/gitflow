@@ -1,7 +1,7 @@
 use crossterm::event::{read, Event, KeyCode};
 use crossterm::terminal::disable_raw_mode;
 use crossterm::{event::poll, terminal::enable_raw_mode};
-use std::process::{Command, Output};
+use std::process::Command;
 use std::{env, io, process};
 
 fn main() {
@@ -26,6 +26,37 @@ fn has_added() -> bool {
     !output.stdout.is_empty()
 }
 
+// fn add() {
+//     let output_status = Command::new("git")
+//         .arg("status")
+//         .arg("--porcelain")
+//         .output()
+//         .expect("git status failed");
+//     if output_status.stdout.is_empty() {
+//         report_error("There is nothing need to push.");
+//     }
+//     println!("There are files ready to be added.");
+//     println!("Type y to add all files or type q to quit:");
+//     enable_raw_input();
+//     loop {
+//         if poll(std::time::Duration::from_millis(100)).unwrap() {
+//             if let Event::Key(event) = read().unwrap() {
+//                 match event.code {
+//                     KeyCode::Char('y') => {
+//                         add_files(true);
+//                         break;
+//                     }
+//                     KeyCode::Char('q') => quit(),
+//                     _ => {
+//                         report_ok(
+//                             "Invalid input. Please press 'y' to add all files or 'q' to quit.",
+//                         );
+//                     }
+//                 }
+//             }
+//         }
+//     }
+// }
 fn add() {
     let output_status = Command::new("git")
         .arg("status")
@@ -38,26 +69,22 @@ fn add() {
     println!("There are files ready to be added.");
     println!("Type y to add all files or type q to quit:");
     enable_raw_input();
+
     loop {
-        if poll(std::time::Duration::from_millis(100)).unwrap() {
-            if let Event::Key(event) = read().unwrap() {
-                match event.code {
-                    KeyCode::Char('y') => {
-                        add_files(true);
-                        break;
-                    }
-                    KeyCode::Char('q') => quit(),
-                    _ => {
-                        report_ok(
-                            "Invalid input. Please press 'y' to add all files or 'q' to quit.",
-                        );
-                    }
+        if let Ok(Event::Key(event)) = read() {
+            match event.code {
+                KeyCode::Char('y') => {
+                    add_files(true);
+                    break;
+                }
+                KeyCode::Char('q') => quit(),
+                _ => {
+                    report_ok("Invalid input. Please press 'y' to add all files or 'q' to quit.");
                 }
             }
         }
     }
 }
-
 static COMMIT_PROMPT: &str = r#"There are uncommitted changes. Type:
   - y: use aicommit to commit the files.
   - n: put commit message manually.
@@ -67,38 +94,70 @@ static COMMIT_PROMPT: &str = r#"There are uncommitted changes. Type:
 fn commit() {
     println!("{}", COMMIT_PROMPT);
     enable_raw_input();
+
     loop {
-        if poll(std::time::Duration::from_millis(100)).unwrap() {
-            if let Event::Key(event) = read().unwrap() {
-                match event.code {
-                    KeyCode::Char('y') => {
-                        aicommit();
-                        break;
-                    }
-                    KeyCode::Char('n') => {
-                        disable_raw_input();
-                        println!("Please input commit message:");
+        if let Ok(Event::Key(event)) = read() {
+            match event.code {
+                KeyCode::Char('y') => {
+                    aicommit();
+                    break;
+                }
+                KeyCode::Char('n') => {
+                    disable_raw_input();
+                    println!("Please input commit message:");
 
-                        let mut commit_message = String::new();
-                        io::stdin()
-                            .read_line(&mut commit_message)
-                            .expect("Failed to read line");
+                    let mut commit_message = String::new();
+                    io::stdin()
+                        .read_line(&mut commit_message)
+                        .expect("Failed to read line");
 
-                        commit_files(&commit_message);
+                    commit_files(&commit_message);
 
-                        break;
-                    }
-                    KeyCode::Char('q') => quit(),
-                    _ => {
-                        println!(
-                            "Invalid input. Please press 'y' to commit changes or 'q' to quit.",
-                        );
-                    }
+                    break;
+                }
+                KeyCode::Char('q') => quit(),
+                _ => {
+                    println!("Invalid input. Please press 'y' to commit changes or 'q' to quit.",);
                 }
             }
         }
     }
 }
+// fn commit() {
+//     println!("{}", COMMIT_PROMPT);
+//     enable_raw_input();
+//     loop {
+//         if poll(std::time::Duration::from_millis(100)).unwrap() {
+//             if let Event::Key(event) = read().unwrap() {
+//                 match event.code {
+//                     KeyCode::Char('y') => {
+//                         aicommit();
+//                         break;
+//                     }
+//                     KeyCode::Char('n') => {
+//                         disable_raw_input();
+//                         println!("Please input commit message:");
+//
+//                         let mut commit_message = String::new();
+//                         io::stdin()
+//                             .read_line(&mut commit_message)
+//                             .expect("Failed to read line");
+//
+//                         commit_files(&commit_message);
+//
+//                         break;
+//                     }
+//                     KeyCode::Char('q') => quit(),
+//                     _ => {
+//                         println!(
+//                             "Invalid input. Please press 'y' to commit changes or 'q' to quit.",
+//                         );
+//                     }
+//                 }
+//             }
+//         }
+//     }
+// }
 
 fn check_git_installed() {
     if !check_command_installed("git") {
@@ -226,14 +285,14 @@ fn aicommit() {
 }
 
 fn has_uncommitted_changes() -> bool {
-    let status = Command::new("git")
+    let output = Command::new("git")
         .arg("diff")
         .arg("--cached")
         .arg("--exit-code")
-        .status()
+        .output()
         .expect("Failed to execute git command");
 
-    !status.success()
+    !output.status.success()
 }
 
 fn execute_command(command: &str) {
