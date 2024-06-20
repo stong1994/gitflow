@@ -141,7 +141,7 @@ fn git_add(all: bool) {
         c = c.arg("--all")
     }
     c.output().expect("git add failed");
-    println!("All files have been added.");
+    println!("All files have been added.\n");
 }
 
 fn commit_files(msg: &str) {
@@ -170,7 +170,7 @@ fn aicommit() {
             if let Event::Key(event) = read().unwrap() {
                 match event.code {
                     KeyCode::Char('y') => {
-                        execute_command(&command);
+                        execute_commit_command(&command);
                         break;
                     }
                     KeyCode::Char('r') => {
@@ -218,6 +218,11 @@ fn has_uncommitted_changes() -> bool {
         .expect("Failed to execute git command");
 
     !output.status.success()
+}
+
+fn execute_commit_command(command: &str) {
+    execute_command(command);
+    println!("executing: \n\t {}\n", command);
 }
 
 fn execute_command(command: &str) {
