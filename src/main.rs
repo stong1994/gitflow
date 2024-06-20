@@ -8,15 +8,15 @@ fn main() {
     check_git_installed();
     check_in_git_repo();
 
-    if !has_added() {
-        add();
+    if !has_file_added() {
+        add_files();
     }
     if has_uncommitted_changes() {
         commit();
     }
 }
 
-fn has_added() -> bool {
+fn has_file_added() -> bool {
     let output = Command::new("git")
         .arg("diff")
         .arg("--cached")
@@ -26,7 +26,7 @@ fn has_added() -> bool {
     !output.stdout.is_empty()
 }
 
-fn add() {
+fn add_files() {
     if !any_changes() {
         report_error("There is nothing need to push.");
     }
@@ -39,7 +39,7 @@ fn add() {
         if let Ok(Event::Key(event)) = read() {
             match event.code {
                 KeyCode::Char('y') => {
-                    add_files(true);
+                    git_add(true);
                     break;
                 }
                 KeyCode::Char('q') => quit(),
@@ -134,7 +134,7 @@ fn report_ok(msg: &str) {
     process::exit(0);
 }
 
-fn add_files(all: bool) {
+fn git_add(all: bool) {
     let command = &mut Command::new("git");
     let mut c = command.arg("add");
     if all {
