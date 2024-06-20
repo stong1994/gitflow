@@ -125,7 +125,7 @@ fn report_error(msg: &str) {
 }
 
 fn quit() {
-    println!("Quiting...");
+    println!("quiting...");
     process::exit(0);
 }
 
