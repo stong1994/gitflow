@@ -87,12 +87,14 @@ fn commit() {
         }
     }
 }
+
 fn push() {
     let remotes = get_remote_names();
     if remotes.is_empty() {
         report_error("No remote repository found.");
     } else if remotes.len() == 1 {
-        git_push(&remotes[0]);
+        let branch = get_branch_name();
+        git_push(&remotes[0], &branch);
     } else {
         loop {
             println!("Please choose a remote to push to:");
@@ -105,7 +107,8 @@ fn push() {
                 .expect("Failed to read line");
             match input.trim().parse::<usize>() {
                 Ok(n) if n > 0 && n <= remotes.len() => {
-                    git_push(&remotes[n - 1]);
+                    let branch = get_branch_name();
+                    git_push(&remotes[n - 1], &branch);
                     break;
                 }
                 _ => {
@@ -266,11 +269,20 @@ fn get_remote_names() -> Vec<String> {
         vec![]
     }
 }
+fn get_branch_name() -> String {
+    println!("Please enter the branch name:");
+    let mut branch = String::new();
+    io::stdin()
+        .read_line(&mut branch)
+        .expect("Failed to read line");
+    branch.trim().to_string()
+}
 
-fn git_push(remote: &str) {
+fn git_push(remote: &str, branch: &str) {
     let output = Command::new("git")
         .arg("push")
         .arg(remote)
+        .arg(branch)
         .output()
         .expect("Failed to execute git push");
     if output.status.success() {
@@ -281,6 +293,7 @@ fn git_push(remote: &str) {
         eprintln!("Error:\n{}", stderr);
     }
 }
+
 fn execute_commit_command(command: &str) {
     println!("Executing: \n\t {}", command);
     let output = execute_command(command);
