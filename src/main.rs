@@ -484,12 +484,12 @@ struct UserPrompt {
     options: Vec<[String; 2]>,
 }
 lazy_static! {
-    static ref PROMPT_BG_COLOR: crossterm::style::Color = hex_to_color("#254336");
+    static ref PROMPT_BG_COLOR: crossterm::style::Color = hex_to_color("#222831");
     static ref COMMAND_BG_COLOR: crossterm::style::Color = hex_to_color("#FDA403");
     static ref COMMAND_BORDER_FG_COLOR: crossterm::style::Color = hex_to_color("#898121");
     static ref COMMAND_FG_COLOR: crossterm::style::Color = hex_to_color("#0A6847");
     static ref PROMPT_FG_COLOR: crossterm::style::Color = hex_to_color("#ECB159");
-    static ref PROMPT_OPTIONI_KEY_FG_COLOR: crossterm::style::Color = hex_to_color("#FFA62F");
+    static ref PROMPT_OPTIONI_KEY_FG_COLOR: crossterm::style::Color = hex_to_color("#C5FF95");
     static ref PROMPT_OPTIONI_QUITKEY_FG_COLOR: crossterm::style::Color = hex_to_color("#FF6868");
     static ref PROMPT_OPTIONI_DESC_FG_COLOR: crossterm::style::Color = hex_to_color("#5BBCFF");
     static ref PROMPT_ERR_FG_COLOR: crossterm::style::Color = hex_to_color("#A555EC");
@@ -518,7 +518,11 @@ impl UserPrompt {
         );
 
         self.options.clone().into_iter().for_each(|option| {
-            colorful_print(*PROMPT_BG_COLOR, *PROMPT_FG_COLOR, "\n\t- [".to_string());
+            colorful_print(
+                *PROMPT_BG_COLOR,
+                *PROMPT_OPTIONI_DESC_FG_COLOR,
+                "\n\t- [".to_string(),
+            );
             colorful_print(
                 *PROMPT_BG_COLOR,
                 *PROMPT_OPTIONI_KEY_FG_COLOR,
@@ -526,7 +530,7 @@ impl UserPrompt {
             );
             colorful_print(
                 *PROMPT_BG_COLOR,
-                *PROMPT_OPTIONI_KEY_FG_COLOR,
+                *PROMPT_OPTIONI_DESC_FG_COLOR,
                 "]: ".to_string(),
             );
             colorful_print(
@@ -536,7 +540,11 @@ impl UserPrompt {
             );
         });
         // print quit option
-        colorful_print(*PROMPT_BG_COLOR, *PROMPT_FG_COLOR, "\n\t- [".to_string());
+        colorful_print(
+            *PROMPT_BG_COLOR,
+            *PROMPT_OPTIONI_DESC_FG_COLOR,
+            "\n\t- [".to_string(),
+        );
         colorful_print(
             *PROMPT_BG_COLOR,
             *PROMPT_OPTIONI_QUITKEY_FG_COLOR,
@@ -544,7 +552,7 @@ impl UserPrompt {
         );
         colorful_print(
             *PROMPT_BG_COLOR,
-            *PROMPT_OPTIONI_KEY_FG_COLOR,
+            *PROMPT_OPTIONI_DESC_FG_COLOR,
             "]: ".to_string(),
         );
         colorful_print(
