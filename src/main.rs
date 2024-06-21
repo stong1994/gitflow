@@ -60,7 +60,7 @@ fn add_files() {
 }
 
 fn commit() {
-    UserPrompt::new("==> There are uncommitted changes.".to_string())
+    UserPrompt::new("\n==> There are uncommitted changes.".to_string())
         .add_option("Y".to_string(), "Commit with AICommit".to_string())
         .add_option("M".to_string(), "Enter commit message manually".to_string())
         .print();
@@ -231,7 +231,7 @@ fn aicommit() {
     colorful_print(
         *PROMPT_BG_COLOR,
         *PROMPT_NOTICE_FG_COLOR,
-        "\n==> generating command by aicommit:\nwaiting....".to_string(),
+        "\n==> generating command by aicommit, please wait a monment ....\n".to_string(),
     );
     let command = execute_aicommit();
     UserPrompt::new("==> AICommit generated command".to_string())
@@ -376,7 +376,7 @@ fn git_push(remote: &str, branch: &str) {
         .expect("Failed to execute git push");
     if output.status.success() {
         disable_raw_input();
-        println!("Pushed to {} successfully.", remote);
+        output_success_result(&format!("Pushed to {} successfully.", remote))
     } else {
         disable_raw_input();
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -385,8 +385,11 @@ fn git_push(remote: &str, branch: &str) {
 }
 
 fn execute_aicommit() -> String {
-    disable_raw_input();
-    println!("{:-^30}", "AICOMMIT BEGIN");
+    colorful_print(
+        *COMMAND_BG_COLOR,
+        *COMMAND_BORDER_FG_COLOR,
+        format!("{:-^50}\n", "AICOMMIT BEGIN".to_string()),
+    );
     let mut child = Command::new("aicommit")
         .stdout(Stdio::piped())
         .spawn()
@@ -395,25 +398,24 @@ fn execute_aicommit() -> String {
     let stdout = child.stdout.take().expect("Failed to capture stdout");
     let reader = BufReader::new(stdout);
 
-    let mut console = io::stdout();
     let mut full_output = String::new();
 
     for word in reader.split(b' ') {
         let mut word = word.expect("Failed to read word");
         word.push(b' ');
-        console
-            .write_all(&word)
-            .expect("Failed to write to console");
-        console.flush().expect("Failed to flush console");
-        full_output.push_str(&String::from_utf8(word).expect("Failed to convert word to string"));
+
+        let content = String::from_utf8(word).expect("Failed to convert word to string");
+        full_output.push_str(&content);
+        colorful_print(*COMMAND_BG_COLOR, *COMMAND_FG_COLOR, content);
         sleep(Duration::from_millis(300));
     }
-    console
-        .write_all(b"\n")
-        .expect("Failed to write to console");
-    console.flush().expect("Failed to flush console");
+    colorful_print(*COMMAND_BG_COLOR, *COMMAND_FG_COLOR, "\n".to_string());
 
-    println!("{:-^30}", "AICOMMIT END");
+    colorful_print(
+        *COMMAND_BG_COLOR,
+        *COMMAND_BORDER_FG_COLOR,
+        format!("{:-^50}", "AICOMMIT END".to_string()),
+    );
     let output = child.wait().expect("Failed to wait on child");
 
     if !output.success() {
@@ -427,7 +429,12 @@ fn execute_commit_command(command: &str) {
     let output = execute_command(command);
     if output.status.success() {
         let stdout = String::from_utf8_lossy(&output.stdout);
-        println!("\nCommand executed successfully. Output:\n{}", stdout);
+        output_success_result("\nCommand executed successfully. Output:\n");
+        colorful_print(
+            *PROMPT_BG_COLOR,
+            *OUTTER_OUTPUT_FG_COLOR,
+            stdout.to_string(),
+        );
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         report_error(&format!("Command execution failed: {}.", stderr));
@@ -465,6 +472,9 @@ struct UserPrompt {
 }
 lazy_static! {
     static ref PROMPT_BG_COLOR: crossterm::style::Color = hex_to_color("#254336");
+    static ref COMMAND_BG_COLOR: crossterm::style::Color = hex_to_color("#FDA403");
+    static ref COMMAND_BORDER_FG_COLOR: crossterm::style::Color = hex_to_color("#898121");
+    static ref COMMAND_FG_COLOR: crossterm::style::Color = hex_to_color("#0A6847");
     static ref PROMPT_FG_COLOR: crossterm::style::Color = hex_to_color("#ECB159");
     static ref PROMPT_OPTIONI_KEY_FG_COLOR: crossterm::style::Color = hex_to_color("#FFA62F");
     static ref PROMPT_OPTIONI_QUITKEY_FG_COLOR: crossterm::style::Color = hex_to_color("#FF6868");
@@ -472,6 +482,7 @@ lazy_static! {
     static ref PROMPT_ERR_FG_COLOR: crossterm::style::Color = hex_to_color("#A555EC");
     static ref PROMPT_SUCCESS_FG_COLOR: crossterm::style::Color = hex_to_color("#CDE990");
     static ref PROMPT_NOTICE_FG_COLOR: crossterm::style::Color = hex_to_color("#C780FA");
+    static ref OUTTER_OUTPUT_FG_COLOR: crossterm::style::Color = hex_to_color("#5356FF");
 }
 impl UserPrompt {
     fn new(prompt: String) -> Self {
