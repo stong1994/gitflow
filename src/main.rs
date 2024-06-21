@@ -4,10 +4,8 @@ use crossterm::style::{Color, Print, ResetColor, SetBackgroundColor, SetForegrou
 use crossterm::terminal::disable_raw_mode;
 use crossterm::{event::poll, terminal::enable_raw_mode};
 use lazy_static::lazy_static;
-use serde_json::from_str;
 use std::io::{stdout, BufRead, BufReader, Write};
 use std::process::{Command, Output, Stdio};
-use std::str::FromStr;
 use std::thread::sleep;
 use std::time::Duration;
 use std::{env, io, process};
@@ -229,8 +227,12 @@ fn commit_files(msg: &str) {
 
 fn aicommit() {
     check_aicommit_installed();
-    disable_raw_input(); // must disable raw mode, otherwise follow output will mess up the terminal
-    println!("\n==> generating command by aicommit:\nwaiting....");
+
+    colorful_print(
+        *PROMPT_BG_COLOR,
+        *PROMPT_NOTICE_FG_COLOR,
+        "\n==> generating command by aicommit:\nwaiting....".to_string(),
+    );
     let command = execute_aicommit();
     UserPrompt::new("==> AICommit generated command".to_string())
         .add_option("Y".to_string(), "Execute the command".to_string())
@@ -450,8 +452,11 @@ fn disable_raw_input() {
 }
 
 fn output_success_result(result: &str) {
-    disable_raw_input();
-    println!("{}", result.yellow());
+    colorful_print(
+        *PROMPT_BG_COLOR,
+        *PROMPT_SUCCESS_FG_COLOR,
+        result.to_string(),
+    );
 }
 
 struct UserPrompt {
@@ -464,6 +469,9 @@ lazy_static! {
     static ref PROMPT_OPTIONI_KEY_FG_COLOR: crossterm::style::Color = hex_to_color("#FFA62F");
     static ref PROMPT_OPTIONI_QUITKEY_FG_COLOR: crossterm::style::Color = hex_to_color("#FF6868");
     static ref PROMPT_OPTIONI_DESC_FG_COLOR: crossterm::style::Color = hex_to_color("#5BBCFF");
+    static ref PROMPT_ERR_FG_COLOR: crossterm::style::Color = hex_to_color("#A555EC");
+    static ref PROMPT_SUCCESS_FG_COLOR: crossterm::style::Color = hex_to_color("#CDE990");
+    static ref PROMPT_NOTICE_FG_COLOR: crossterm::style::Color = hex_to_color("#C780FA");
 }
 impl UserPrompt {
     fn new(prompt: String) -> Self {
@@ -525,8 +533,8 @@ impl UserPrompt {
 
 fn output_invalid_type() {
     colorful_print(
-        Color::DarkRed,
-        Color::White,
+        *PROMPT_BG_COLOR,
+        *PROMPT_ERR_FG_COLOR,
         "Invalid input. Please try again.\n".to_string(),
     );
 }
