@@ -94,53 +94,9 @@ fn commit() {
 }
 
 fn push() {
-    let remotes = get_remote_names();
-    if remotes.is_empty() {
-        report_error("No remote repository found.");
-    } else if remotes.len() == 1 {
-        disable_raw_input();
-        println!("==> There is only one remote repository.\nnPlease choose an option:\n\t- [Y]: Push to the remote: {}.\n\t- [Q]: Quit.", remotes[0]);
-        loop {
-            enable_raw_input();
-            if let Event::Key(event) = read().unwrap() {
-                match event.code {
-                    KeyCode::Char('y') => {
-                        let branch = get_branch_name();
-                        git_push(&remotes[0], &branch);
-                        break;
-                    }
-                    KeyCode::Char('q') => quit(),
-                    _ => {
-                        println!("Invalid input. Please try again.");
-                    }
-                }
-            }
-        }
-        let branch = get_branch_name();
-        git_push(&remotes[0], &branch);
-    } else {
-        loop {
-            disable_raw_input();
-            println!("Please choose a remote to push to:");
-            for (i, remote) in remotes.iter().enumerate() {
-                println!("{}: {}", i + 1, remote);
-            }
-            let mut input = String::new();
-            io::stdin()
-                .read_line(&mut input)
-                .expect("Failed to read line");
-            match input.trim().parse::<usize>() {
-                Ok(n) if n > 0 && n <= remotes.len() => {
-                    let branch = get_branch_name();
-                    git_push(&remotes[n - 1], &branch);
-                    break;
-                }
-                _ => {
-                    println!("Invalid input. Please try again.");
-                }
-            }
-        }
-    }
+    let remote = get_remote_name();
+    let branch = get_branch_name();
+    git_push(&remote, &branch);
 }
 
 fn get_remote_name() -> String {
@@ -159,7 +115,7 @@ fn get_remote_name() -> String {
             .expect("Failed to read line");
 
         git_set_remote(&remote, &url);
-        return remote;
+        remote
     } else if remotes.len() == 1 {
         disable_raw_input();
         println!("==> There is only one remote repository.\nnPlease choose an option:\n\t- [Y]: Push to the remote: {}.\n\t- [Q]: Quit.", remotes[0]);
@@ -356,7 +312,7 @@ fn get_branch_name() -> String {
     let local_branch = get_current_branch();
 
     disable_raw_input();
-    println!("==> There are unpushed commits. Please choose an branch:\n\t- [Y]: {}.\n\t- [M]: Input branch manually.\n\t- [Q]: Quit.\n", local_branch);
+    println!("==> Please choose an branch:\n\t- [Y]: {}.\n\t- [M]: Input branch manually.\n\t- [Q]: Quit.\n", local_branch);
 
     enable_raw_input();
     loop {
