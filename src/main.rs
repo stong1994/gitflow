@@ -493,7 +493,7 @@ lazy_static! {
     static ref PROMPT_OPTIONI_KEY_FG_COLOR: crossterm::style::Color = hex_to_color("#C5FF95");
     static ref PROMPT_OPTIONI_QUITKEY_FG_COLOR: crossterm::style::Color = hex_to_color("#FF6868");
     static ref PROMPT_OPTIONI_DESC_FG_COLOR: crossterm::style::Color = hex_to_color("#5BBCFF");
-    static ref PROMPT_ERR_FG_COLOR: crossterm::style::Color = hex_to_color("#A555EC");
+    static ref PROMPT_ERR_FG_COLOR: crossterm::style::Color = hex_to_color("#FF0000");
     static ref PROMPT_SUCCESS_FG_COLOR: crossterm::style::Color = hex_to_color("#CDE990");
     static ref PROMPT_NOTICE_FG_COLOR: crossterm::style::Color = hex_to_color("#C780FA");
     static ref OUTTER_OUTPUT_FG_COLOR: crossterm::style::Color = hex_to_color("#5356FF");
