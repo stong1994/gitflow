@@ -33,14 +33,14 @@ fn has_file_added() -> bool {
 fn add_files() {
     if !any_changes() {
         return;
-        // report_error("There is nothing need to push.");
     }
 
+    disable_raw_input();
     println!("==> There are files ready to be added.");
     println!("Please choose an option:\n\t- [Y]: Add all files\n\t- [Q]: Quit");
-    enable_raw_input();
 
     loop {
+        enable_raw_input();
         if let Ok(Event::Key(event)) = read() {
             match event.code {
                 KeyCode::Char('y') => {
@@ -49,7 +49,7 @@ fn add_files() {
                 }
                 KeyCode::Char('q') => quit(),
                 _ => {
-                    report_ok("Invalid input. Please press 'y' to add all files or 'q' to quit.");
+                    report_ok("Invalid input. Please try again.");
                 }
             }
         }
@@ -59,10 +59,11 @@ fn add_files() {
 static COMMIT_PROMPT: &str = "==> There are uncommitted changes. Please choose an option:\n\t- [Y]: Use AICommit to commit the files.\n\t- [M]: Enter commit message manually.\n\t- [Q]: Quit.";
 
 fn commit() {
+    disable_raw_input();
     println!("{}", COMMIT_PROMPT);
-    enable_raw_input();
 
     loop {
+        enable_raw_input();
         if let Ok(Event::Key(event)) = read() {
             match event.code {
                 KeyCode::Char('y') => {
@@ -84,23 +85,42 @@ fn commit() {
                 }
                 KeyCode::Char('q') => quit(),
                 _ => {
-                    println!("Invalid input. Please press 'y' to commit changes or 'q' to quit.",);
+                    disable_raw_input();
+                    println!("Invalid input. Please try again.",);
                 }
             }
         }
     }
 }
 
-static PUSH_PROMPT: &str = "==> There are unpushed commits. Please choose an branch:\n\t- [Y]: Push to remote repository.\n\t- [M]: Push to remote repository.\n\t- [Q]: Quit.\n";
 fn push() {
     let remotes = get_remote_names();
     if remotes.is_empty() {
         report_error("No remote repository found.");
     } else if remotes.len() == 1 {
+        disable_raw_input();
+        println!("==> There is only one remote repository.\nnPlease choose an option:\n\t- [Y]: Push to the remote: {}.\n\t- [Q]: Quit.", remotes[0]);
+        loop {
+            enable_raw_input();
+            if let Event::Key(event) = read().unwrap() {
+                match event.code {
+                    KeyCode::Char('y') => {
+                        let branch = get_branch_name();
+                        git_push(&remotes[0], &branch);
+                        break;
+                    }
+                    KeyCode::Char('q') => quit(),
+                    _ => {
+                        println!("Invalid input. Please try again.");
+                    }
+                }
+            }
+        }
         let branch = get_branch_name();
         git_push(&remotes[0], &branch);
     } else {
         loop {
+            disable_raw_input();
             println!("Please choose a remote to push to:");
             for (i, remote) in remotes.iter().enumerate() {
                 println!("{}: {}", i + 1, remote);
@@ -117,6 +137,71 @@ fn push() {
                 }
                 _ => {
                     println!("Invalid input. Please try again.");
+                }
+            }
+        }
+    }
+}
+
+fn get_remote_name() -> String {
+    let remotes = get_remote_names();
+    if remotes.is_empty() {
+        disable_raw_input();
+        println!("Please input the remote name");
+        let mut remote = String::new();
+        io::stdin()
+            .read_line(&mut remote)
+            .expect("Failed to read line");
+        println!("Please input the url of {}.", remote);
+        let mut url = String::new();
+        io::stdin()
+            .read_line(&mut url)
+            .expect("Failed to read line");
+
+        git_set_remote(&remote, &url);
+        return remote;
+    } else if remotes.len() == 1 {
+        disable_raw_input();
+        println!("==> There is only one remote repository.\nnPlease choose an option:\n\t- [Y]: Push to the remote: {}.\n\t- [Q]: Quit.", remotes[0]);
+        loop {
+            enable_raw_input();
+            if let Event::Key(event) = read().unwrap() {
+                match event.code {
+                    KeyCode::Char('y') => {
+                        let branch = get_branch_name();
+                        return branch;
+                    }
+                    KeyCode::Char('q') => quit(),
+                    _ => {
+                        println!("Invalid input. Please try again.");
+                    }
+                }
+            }
+        }
+    } else {
+        disable_raw_input();
+        println!("Please choose a remote to push to:");
+        for (i, remote) in remotes.iter().enumerate() {
+            println!("{}: {}", i + 1, remote);
+        }
+
+        loop {
+            enable_raw_input();
+            if let Event::Key(event) = read().unwrap() {
+                match event.code {
+                    KeyCode::Char(c) => {
+                        let i = (c as u8 - b'0') as usize;
+                        if i > 0 && i <= remotes.len() {
+                            return remotes[i - 1].clone();
+                        } else {
+                            disable_raw_input();
+                            println!("Invalid input. Please try again.");
+                        }
+                    }
+                    _ => {
+                        disable_raw_input();
+                        println!("Invalid input. Please try again.");
+                    }
                 }
             }
         }
@@ -178,7 +263,8 @@ fn git_add(all: bool) {
         c = c.arg("--all")
     }
     c.output().expect("git add failed");
-    println!("All files have been added.\n");
+    disable_raw_input();
+    println!("All files have been added.");
 }
 
 fn commit_files(msg: &str) {
@@ -193,12 +279,12 @@ fn commit_files(msg: &str) {
 static COMMIT_EXEC_PROMPT: &str = "==> AICommit generated command:\nPlease choose an option:\n\t- [Y]: Execute the command\n\t- [R]: Regenerate command\n\t- [M]: Enter commit message manually\n\t- [Q]: Quit";
 fn aicommit() {
     check_aicommit_installed();
-
-    println!("==> generating command by aicommit:\nwaiting....");
+    disable_raw_input(); // must disable raw mode, otherwise follow output will mess up the terminal
+    println!("\n==> generating command by aicommit:\nwaiting....");
     let command = execute_aicommit();
     println!("{}", COMMIT_EXEC_PROMPT);
-    enable_raw_input();
     loop {
+        enable_raw_input();
         if poll(std::time::Duration::from_millis(100)).unwrap() {
             if let Event::Key(event) = read().unwrap() {
                 match event.code {
@@ -225,9 +311,8 @@ fn aicommit() {
                     }
                     KeyCode::Char('q') => report_ok("Quiting..."),
                     _ => {
-                        println!(
-                            "Invalid input. Please press 'y' to commit changes or 'q' to quit.",
-                        );
+                        disable_raw_input();
+                        println!("Invalid input. Please try again.",);
                     }
                 }
             }
@@ -259,19 +344,18 @@ fn get_remote_names() -> Vec<String> {
         .output()
         .expect("Failed to execute git command");
 
-    if output.status.success() {
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        stdout.split_whitespace().map(String::from).collect()
-    } else {
-        eprintln!("Failed to get remote names.");
+    if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        eprintln!("Error:\n{}", stderr);
-        vec![]
+        report_error(&format!("Failed to get remote names: {}", stderr));
     }
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    stdout.split_whitespace().map(String::from).collect()
 }
 
 fn get_branch_name() -> String {
     let local_branch = get_current_branch();
+
+    disable_raw_input();
     println!("==> There are unpushed commits. Please choose an branch:\n\t- [Y]: {}.\n\t- [M]: Input branch manually.\n\t- [Q]: Quit.\n", local_branch);
 
     enable_raw_input();
@@ -305,15 +389,29 @@ fn get_current_branch() -> String {
         .arg("HEAD")
         .output()
         .expect("Failed to execute git command");
-    if output.status.success() {
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        stdout.trim().to_string()
-    } else {
-        eprintln!("Failed to get current branch.");
+    if !output.status.success() {
+        disable_raw_input();
         let stderr = String::from_utf8_lossy(&output.stderr);
-        eprintln!("Error:\n{}", stderr);
-        String::new()
+        report_error(&format!("Failed to get current branch: {}", stderr));
     }
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    stdout.trim().to_string()
+}
+
+fn git_set_remote(name: &str, url: &str) {
+    disable_raw_input();
+    let output = Command::new("git")
+        .arg("remote")
+        .arg("add")
+        .arg(name)
+        .arg(url)
+        .output()
+        .expect("Failed to execute git push");
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        report_error(&format!("Failed to add remote: {}", stderr));
+    }
+    println!("Set remote {} successfully.", name);
 }
 
 fn git_push(remote: &str, branch: &str) {
@@ -324,15 +422,18 @@ fn git_push(remote: &str, branch: &str) {
         .output()
         .expect("Failed to execute git push");
     if output.status.success() {
+        disable_raw_input();
         println!("Pushed to {} successfully.", remote);
     } else {
-        eprintln!("Failed to push to {}.", remote);
+        disable_raw_input();
         let stderr = String::from_utf8_lossy(&output.stderr);
-        eprintln!("Error:\n{}", stderr);
+        report_error(&format!("Failed to push: {}", stderr));
     }
 }
 
 fn execute_aicommit() -> String {
+    disable_raw_input();
+    println!("{:-^30}", "AICOMMIT BEGIN");
     let mut child = Command::new("aicommit")
         .stdout(Stdio::piped())
         .spawn()
@@ -352,11 +453,14 @@ fn execute_aicommit() -> String {
             .expect("Failed to write to console");
         console.flush().expect("Failed to flush console");
         full_output.push_str(&String::from_utf8(word).expect("Failed to convert word to string"));
+        sleep(Duration::from_millis(300));
     }
     console
         .write_all(b"\n")
         .expect("Failed to write to console");
+    console.flush().expect("Failed to flush console");
 
+    println!("{:-^30}", "AICOMMIT END");
     let output = child.wait().expect("Failed to wait on child");
 
     if !output.success() {
@@ -366,6 +470,7 @@ fn execute_aicommit() -> String {
 }
 
 fn execute_commit_command(command: &str) {
+    disable_raw_input();
     println!("Executing: \n\t {}", command);
     let output = execute_command(command);
 
@@ -374,9 +479,8 @@ fn execute_commit_command(command: &str) {
         let stdout = String::from_utf8_lossy(&output.stdout);
         println!("Output:\n{}", stdout);
     } else {
-        eprintln!("Command execution failed.");
         let stderr = String::from_utf8_lossy(&output.stderr);
-        eprintln!("Error:\n{}", stderr);
+        report_error(&format!("Command execution failed: {}.", stderr));
     }
 }
 
