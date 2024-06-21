@@ -1,10 +1,13 @@
 use crossterm::event::{read, Event, KeyCode};
-use crossterm::execute;
-use crossterm::style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor, Stylize};
+use crossterm::style::{
+    Attribute, Color, Print, ResetColor, SetAttribute, SetBackgroundColor, SetForegroundColor,
+    StyledContent, Stylize,
+};
 use crossterm::terminal::disable_raw_mode;
 use crossterm::{event::poll, terminal::enable_raw_mode};
+use crossterm::{execute, ExecutableCommand};
 use lazy_static::lazy_static;
-use std::io::{stdout, BufRead, BufReader, Write};
+use std::io::{stdout, BufRead, BufReader, Stdout, Write};
 use std::process::{Command, Output, Stdio};
 use std::thread::sleep;
 use std::time::Duration;
@@ -117,8 +120,11 @@ fn get_remote_name() -> String {
         git_set_remote(&remote, &url);
         remote
     } else if remotes.len() == 1 {
-        UserPrompt::new("==> There is only one remote repository.".to_string())
-            .add_option("Y".to_string(), "Push to the remote".to_string())
+        UserPrompt::new("==> Confirm Remote. There is only one remote repository.".to_string())
+            .add_option(
+                "Y".to_string(),
+                format!("Push to the remote: {}", remotes[0]),
+            )
             .print();
         loop {
             enable_raw_input();
@@ -143,18 +149,17 @@ fn get_remote_name() -> String {
             if let Event::Key(event) = read().unwrap() {
                 match event.code {
                     KeyCode::Char(c) => {
+                        if c == 'q' {
+                            quit();
+                        }
                         let i = (c as u8 - b'0') as usize;
                         if i > 0 && i <= remotes.len() {
                             return remotes[i - 1].clone();
                         } else {
-                            disable_raw_input();
-                            println!("Invalid input. Please try again.");
+                            output_invalid_type();
                         }
                     }
-                    _ => {
-                        disable_raw_input();
-                        println!("Invalid input. Please try again.");
-                    }
+                    _ => output_invalid_type(),
                 }
             }
         }
@@ -309,7 +314,7 @@ fn get_remote_names() -> Vec<String> {
 fn get_branch_name() -> String {
     let local_branch = get_current_branch();
 
-    UserPrompt::new("==> Please choose an branch".to_string())
+    UserPrompt::new("==> Confirm Branch".to_string())
         .add_option("Y".to_string(), local_branch.clone())
         .add_option("M".to_string(), "Input branch manually.".to_string())
         .print();
@@ -330,6 +335,8 @@ fn get_branch_name() -> String {
                         .expect("Failed to read line");
                     return branch;
                 }
+
+                KeyCode::Char('q') => quit(),
                 _ => output_invalid_type(),
             }
         }
@@ -411,7 +418,7 @@ fn execute_aicommit() -> String {
 
         let content = String::from_utf8(word).expect("Failed to convert word to string");
         full_output.push_str(&content);
-        colorful_print(*CODE_BG_COLOR, *CODE_FG_COLOR, content);
+        colorful_print_with_bold(*CODE_BG_COLOR, *CODE_FG_COLOR, content);
         sleep(Duration::from_millis(300));
     }
     colorful_print(*CODE_BG_COLOR, *CODE_FG_COLOR, "\n".to_string());
@@ -490,7 +497,7 @@ lazy_static! {
     static ref CODE_FG_COLOR: crossterm::style::Color = hex_to_color("#0A6847");
     static ref COMMAND_FG_COLOR: crossterm::style::Color = hex_to_color("#ACD793");
     static ref PROMPT_FG_COLOR: crossterm::style::Color = hex_to_color("#ECB159");
-    static ref PROMPT_OPTIONI_KEY_FG_COLOR: crossterm::style::Color = hex_to_color("#C5FF95");
+    static ref PROMPT_OPTIONI_KEY_FG_COLOR: crossterm::style::Color = hex_to_color("#CBFFA9");
     static ref PROMPT_OPTIONI_QUITKEY_FG_COLOR: crossterm::style::Color = hex_to_color("#FF6868");
     static ref PROMPT_OPTIONI_DESC_FG_COLOR: crossterm::style::Color = hex_to_color("#5BBCFF");
     static ref PROMPT_ERR_FG_COLOR: crossterm::style::Color = hex_to_color("#FF0000");
@@ -524,10 +531,10 @@ impl UserPrompt {
                 *PROMPT_OPTIONI_DESC_FG_COLOR,
                 "\n\t- [".to_string(),
             );
-            colorful_print(
+            colorful_print_with_bold(
                 *PROMPT_BG_COLOR,
                 *PROMPT_OPTIONI_KEY_FG_COLOR,
-                option[0].clone(),
+                option[0].to_string(),
             );
             colorful_print(
                 *PROMPT_BG_COLOR,
@@ -546,7 +553,7 @@ impl UserPrompt {
             *PROMPT_OPTIONI_DESC_FG_COLOR,
             "\n\t- [".to_string(),
         );
-        colorful_print(
+        colorful_print_with_bold(
             *PROMPT_BG_COLOR,
             *PROMPT_OPTIONI_QUITKEY_FG_COLOR,
             "Q".to_string(),
@@ -584,6 +591,19 @@ fn colorful_print(bg: Color, fg: Color, content: String) {
     .expect("Failed to colorful print");
 }
 
+// TODO: refacor
+fn colorful_print_with_bold(bg: Color, fg: Color, content: String) {
+    disable_raw_input();
+    execute!(
+        stdout(),
+        SetForegroundColor(fg),
+        SetBackgroundColor(bg),
+        SetAttribute(Attribute::Bold),
+        Print(content),
+        ResetColor
+    )
+    .expect("Failed to colorful print");
+}
 fn hex_to_color(hex: &str) -> crossterm::style::Color {
     let r = u8::from_str_radix(&hex[1..3], 16).unwrap();
     let g = u8::from_str_radix(&hex[3..5], 16).unwrap();
