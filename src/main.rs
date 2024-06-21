@@ -391,7 +391,7 @@ fn git_push(remote: &str, branch: &str) {
 
 fn execute_aicommit() -> String {
     colorful_print(
-        *COMMAND_BG_COLOR,
+        *PROMPT_BG_COLOR,
         *COMMAND_BORDER_FG_COLOR,
         format!("{:-^50}\n", "AICOMMIT BEGIN".to_string()),
     );
@@ -417,7 +417,7 @@ fn execute_aicommit() -> String {
     colorful_print(*COMMAND_BG_COLOR, *COMMAND_FG_COLOR, "\n".to_string());
 
     colorful_print(
-        *COMMAND_BG_COLOR,
+        *PROMPT_BG_COLOR,
         *COMMAND_BORDER_FG_COLOR,
         format!("{:-^50}", "AICOMMIT END".to_string()),
     );
@@ -485,9 +485,9 @@ struct UserPrompt {
 }
 lazy_static! {
     static ref PROMPT_BG_COLOR: crossterm::style::Color = hex_to_color("#222831");
-    static ref COMMAND_BG_COLOR: crossterm::style::Color = hex_to_color("#FDA403");
+    static ref COMMAND_BG_COLOR: crossterm::style::Color = hex_to_color("#F9E8C9");
     static ref COMMAND_BORDER_FG_COLOR: crossterm::style::Color = hex_to_color("#898121");
-    static ref COMMAND_FG_COLOR: crossterm::style::Color = hex_to_color("#0A6847");
+    static ref COMMAND_FG_COLOR: crossterm::style::Color = hex_to_color("#ACD793");
     static ref PROMPT_FG_COLOR: crossterm::style::Color = hex_to_color("#ECB159");
     static ref PROMPT_OPTIONI_KEY_FG_COLOR: crossterm::style::Color = hex_to_color("#C5FF95");
     static ref PROMPT_OPTIONI_QUITKEY_FG_COLOR: crossterm::style::Color = hex_to_color("#FF6868");
