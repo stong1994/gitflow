@@ -1,7 +1,10 @@
 use crossterm::event::{read, Event, KeyCode};
 use crossterm::terminal::disable_raw_mode;
 use crossterm::{event::poll, terminal::enable_raw_mode};
+use std::io::{BufRead, BufReader, Write};
 use std::process::{Command, Output};
+use std::thread::sleep;
+use std::time::Duration;
 use std::{env, io, process};
 
 fn main() {
@@ -189,14 +192,11 @@ fn commit_files(msg: &str) {
 
 fn aicommit() {
     check_aicommit_installed();
-    let output = Command::new("aicommit")
-        .output()
-        .expect("Failed to execute aicommit");
-    let command = String::from_utf8_lossy(&output.stdout);
 
+    println!("==> generating command by aicommit:\nwaiting....");
+    let command = execute_aicommit();
     println!(
-    "==> AICommit generated the following command:\n\n{}\n\nPlease choose an option:\n  - [Y]: Execute the command\n  - [R]: Regenerate command\n  - [M]: Enter commit message manually\n  - [Q]: Quit",
-    command
+    "==> AICommit generated command:\nPlease choose an option:\n\t- [Y]: Execute the command\n\t- [R]: Regenerate command\n\t- [M]: Enter commit message manually\n\t- [Q]: Quit",
 );
     enable_raw_input();
     loop {
@@ -330,6 +330,39 @@ fn git_push(remote: &str, branch: &str) {
         eprintln!("Failed to push to {}.", remote);
         let stderr = String::from_utf8_lossy(&output.stderr);
         eprintln!("Error:\n{}", stderr);
+    }
+}
+
+fn execute_aicommit() -> String {
+    let mut child = Command::new("aicommit")
+        .spawn()
+        .expect("Failed to execute aicommit");
+
+    let stdout = child.stdout.take().expect("Failed to capture stdout");
+    let reader = BufReader::new(stdout);
+
+    let mut console = io::stdout();
+    let mut full_output = String::new();
+
+    for word in reader.split(b' ') {
+        let mut word = word.expect("Failed to read word");
+        word.push(b' ');
+        console
+            .write_all(&word)
+            .expect("Failed to write to console");
+        console.flush().expect("Failed to flush console");
+        full_output.push_str(&String::from_utf8(word).expect("Failed to convert word to string"));
+    }
+
+    let output = child.wait_with_output().expect("Failed to wait on child");
+
+    if output.status.success() {
+        full_output
+    } else {
+        eprintln!("aicommit execution failed.");
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        eprintln!("Error:\n{}", stderr);
+        String::new()
     }
 }
 
