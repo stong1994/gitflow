@@ -368,6 +368,11 @@ fn git_set_remote(name: &str, url: &str) {
 }
 
 fn git_push(remote: &str, branch: &str) {
+    colorful_print(
+        *PROMPT_BG_COLOR,
+        *PROMPT_NOTICE_FG_COLOR,
+        "Pushing code, please wait a monment...".to_string(),
+    );
     let output = Command::new("git")
         .arg("push")
         .arg(remote)
