@@ -118,14 +118,13 @@ fn get_remote_name() -> String {
         remote
     } else if remotes.len() == 1 {
         disable_raw_input();
-        println!("==> There is only one remote repository.\nnPlease choose an option:\n\t- [Y]: Push to the remote: {}.\n\t- [Q]: Quit.", remotes[0]);
+        println!("==> There is only one remote repository.\nPlease choose an option:\n\t- [Y]: Push to the remote: {}.\n\t- [Q]: Quit.", remotes[0]);
         loop {
             enable_raw_input();
             if let Event::Key(event) = read().unwrap() {
                 match event.code {
                     KeyCode::Char('y') => {
-                        let branch = get_branch_name();
-                        return branch;
+                        return remotes[0].clone();
                     }
                     KeyCode::Char('q') => quit(),
                     _ => {
