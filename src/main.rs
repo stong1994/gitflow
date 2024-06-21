@@ -213,7 +213,7 @@ fn git_add(all: bool) {
         c = c.arg("--all")
     }
     c.output().expect("git add failed");
-    output_success_result("All files have been added.");
+    output_success_result("\nAll files have been added.");
 }
 
 fn commit_files(msg: &str) {
@@ -447,8 +447,16 @@ fn execute_commit_command(command: &str) {
 }
 
 fn execute_command(command: &str) -> Output {
-    disable_raw_input();
-    println!("Executing: \n\t {}", command.green().bold());
+    colorful_print(
+        *PROMPT_BG_COLOR,
+        *PROMPT_NOTICE_FG_COLOR,
+        "\nExecuting:".to_string(),
+    );
+    colorful_print(
+        *PROMPT_BG_COLOR,
+        *COMMAND_FG_COLOR,
+        format!("\t{}", command).to_string(),
+    );
     Command::new("sh")
         .arg("-c")
         .arg(command)
