@@ -371,7 +371,7 @@ fn git_push(remote: &str, branch: &str) {
     colorful_print(
         *PROMPT_BG_COLOR,
         *PROMPT_NOTICE_FG_COLOR,
-        "Pushing code, please wait a monment...".to_string(),
+        "Pushing code, please wait a monment...\n".to_string(),
     );
     let output = Command::new("git")
         .arg("push")
