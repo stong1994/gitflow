@@ -462,8 +462,6 @@ lazy_static! {
     static ref PROMPT_BG_COLOR: crossterm::style::Color = hex_to_color("#254336");
     static ref PROMPT_FG_COLOR: crossterm::style::Color = hex_to_color("#ECB159");
     static ref PROMPT_OPTIONI_KEY_FG_COLOR: crossterm::style::Color = hex_to_color("#FFA62F");
-    static ref PROMPT_OPTIONI_QUITKEY_FG_COLOR: crossterm::style::Color = hex_to_color("#FF6868");
-    static ref PROMPT_OPTIONI_DESC_FG_COLOR: crossterm::style::Color = hex_to_color("#5BBCFF");
 }
 impl UserPrompt {
     fn new(prompt: String) -> Self {
@@ -484,42 +482,23 @@ impl UserPrompt {
             *PROMPT_FG_COLOR,
             format!("\n{}\n\nPlease choose an option:\n", self.prompt.clone()),
         );
+        // println!(
+        //     "\n{}:\nPlease choose an option:",
+        //     self.prompt.clone().blue()
+        // );
 
         self.options.clone().into_iter().for_each(|option| {
-            colorful_print(*PROMPT_BG_COLOR, *PROMPT_FG_COLOR, "\n\t- [".to_string());
             colorful_print(
-                *PROMPT_BG_COLOR,
-                *PROMPT_OPTIONI_KEY_FG_COLOR,
-                option[0].clone(),
-            );
-            colorful_print(
-                *PROMPT_BG_COLOR,
-                *PROMPT_OPTIONI_KEY_FG_COLOR,
-                "]: ".to_string(),
-            );
-            colorful_print(
-                *PROMPT_BG_COLOR,
-                *PROMPT_OPTIONI_DESC_FG_COLOR,
-                option[1].clone() + "\n",
+                Color::Green,
+                Color::DarkBlue,
+                format!("\n\t- [{}]: ", option[0].clone()),
             );
         });
-        // print quit option
-        colorful_print(*PROMPT_BG_COLOR, *PROMPT_FG_COLOR, "\n\t- [".to_string());
-        colorful_print(
-            *PROMPT_BG_COLOR,
-            *PROMPT_OPTIONI_QUITKEY_FG_COLOR,
-            "Q".to_string(),
-        );
-        colorful_print(
-            *PROMPT_BG_COLOR,
-            *PROMPT_OPTIONI_KEY_FG_COLOR,
-            "]: ".to_string(),
-        );
-        colorful_print(
-            *PROMPT_BG_COLOR,
-            *PROMPT_OPTIONI_DESC_FG_COLOR,
-            "Quit\n".to_string(),
-        );
+        self.options.clone().into_iter().for_each(|option| {
+            colorful_print(Color::Green, Color::DarkBlue, option[1].clone() + "\n");
+        });
+        colorful_print(Color::Green, Color::DarkBlue, "\n\t- [Q]: ".to_string());
+        colorful_print(Color::Green, Color::DarkBlue, "Quit\n".to_string());
     }
 }
 
