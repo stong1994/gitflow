@@ -392,7 +392,7 @@ fn git_push(remote: &str, branch: &str) {
 fn execute_aicommit() -> String {
     colorful_print(
         *PROMPT_BG_COLOR,
-        *COMMAND_BORDER_FG_COLOR,
+        *CODE_BORDER_FG_COLOR,
         format!("{:-^50}\n", "AICOMMIT BEGIN".to_string()),
     );
     let mut child = Command::new("aicommit")
@@ -411,14 +411,14 @@ fn execute_aicommit() -> String {
 
         let content = String::from_utf8(word).expect("Failed to convert word to string");
         full_output.push_str(&content);
-        colorful_print(*COMMAND_BG_COLOR, *COMMAND_FG_COLOR, content);
+        colorful_print(*CODE_BG_COLOR, *CODE_FG_COLOR, content);
         sleep(Duration::from_millis(300));
     }
-    colorful_print(*COMMAND_BG_COLOR, *COMMAND_FG_COLOR, "\n".to_string());
+    colorful_print(*CODE_BG_COLOR, *CODE_FG_COLOR, "\n".to_string());
 
     colorful_print(
         *PROMPT_BG_COLOR,
-        *COMMAND_BORDER_FG_COLOR,
+        *CODE_BORDER_FG_COLOR,
         format!("{:-^50}", "AICOMMIT END".to_string()),
     );
     let output = child.wait().expect("Failed to wait on child");
@@ -485,8 +485,9 @@ struct UserPrompt {
 }
 lazy_static! {
     static ref PROMPT_BG_COLOR: crossterm::style::Color = hex_to_color("#222831");
-    static ref COMMAND_BG_COLOR: crossterm::style::Color = hex_to_color("#F9E8C9");
-    static ref COMMAND_BORDER_FG_COLOR: crossterm::style::Color = hex_to_color("#898121");
+    static ref CODE_BG_COLOR: crossterm::style::Color = hex_to_color("#F9E8C9");
+    static ref CODE_BORDER_FG_COLOR: crossterm::style::Color = hex_to_color("#898121");
+    static ref CODE_FG_COLOR: crossterm::style::Color = hex_to_color("#0A6847");
     static ref COMMAND_FG_COLOR: crossterm::style::Color = hex_to_color("#ACD793");
     static ref PROMPT_FG_COLOR: crossterm::style::Color = hex_to_color("#ECB159");
     static ref PROMPT_OPTIONI_KEY_FG_COLOR: crossterm::style::Color = hex_to_color("#C5FF95");
