@@ -2,7 +2,7 @@ use crossterm::event::{read, Event, KeyCode};
 use crossterm::terminal::disable_raw_mode;
 use crossterm::{event::poll, terminal::enable_raw_mode};
 use std::io::{BufRead, BufReader, Write};
-use std::process::{Command, Output};
+use std::process::{Command, Output, Stdio};
 use std::thread::sleep;
 use std::time::Duration;
 use std::{env, io, process};
@@ -37,7 +37,7 @@ fn add_files() {
     }
 
     println!("==> There are files ready to be added.");
-    println!("Please choose an option:\n\t - [Y]: Add all files\n\t- [Q]: Quit");
+    println!("Please choose an option:\n\t- [Y]: Add all files\n\t- [Q]: Quit");
     enable_raw_input();
 
     loop {
@@ -56,7 +56,7 @@ fn add_files() {
     }
 }
 
-static COMMIT_PROMPT: &str = "==> There are uncommitted changes. Please choose an option:\n  - [Y]: Use AICommit to commit the files.\n  - [M]: Enter commit message manually.\n  - [Q]: Quit.\n";
+static COMMIT_PROMPT: &str = "==> There are uncommitted changes. Please choose an option:\n\t- [Y]: Use AICommit to commit the files.\n\t- [M]: Enter commit message manually.\n\t- [Q]: Quit.";
 
 fn commit() {
     println!("{}", COMMIT_PROMPT);
@@ -190,14 +190,13 @@ fn commit_files(msg: &str) {
         .expect("Failed to commit");
 }
 
+static COMMIT_EXEC_PROMPT: &str = "==> AICommit generated command:\nPlease choose an option:\n\t- [Y]: Execute the command\n\t- [R]: Regenerate command\n\t- [M]: Enter commit message manually\n\t- [Q]: Quit";
 fn aicommit() {
     check_aicommit_installed();
 
     println!("==> generating command by aicommit:\nwaiting....");
     let command = execute_aicommit();
-    println!(
-    "==> AICommit generated command:\nPlease choose an option:\n\t- [Y]: Execute the command\n\t- [R]: Regenerate command\n\t- [M]: Enter commit message manually\n\t- [Q]: Quit",
-);
+    println!("{}", COMMIT_EXEC_PROMPT);
     enable_raw_input();
     loop {
         if poll(std::time::Duration::from_millis(100)).unwrap() {
@@ -335,6 +334,7 @@ fn git_push(remote: &str, branch: &str) {
 
 fn execute_aicommit() -> String {
     let mut child = Command::new("aicommit")
+        .stdout(Stdio::piped())
         .spawn()
         .expect("Failed to execute aicommit");
 
@@ -353,17 +353,16 @@ fn execute_aicommit() -> String {
         console.flush().expect("Failed to flush console");
         full_output.push_str(&String::from_utf8(word).expect("Failed to convert word to string"));
     }
+    console
+        .write_all(b"\n")
+        .expect("Failed to write to console");
 
-    let output = child.wait_with_output().expect("Failed to wait on child");
+    let output = child.wait().expect("Failed to wait on child");
 
-    if output.status.success() {
-        full_output
-    } else {
-        eprintln!("aicommit execution failed.");
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        eprintln!("Error:\n{}", stderr);
-        String::new()
+    if !output.success() {
+        report_error("aicommit execution failed.");
     }
+    full_output
 }
 
 fn execute_commit_command(command: &str) {
