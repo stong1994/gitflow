@@ -315,7 +315,10 @@ fn get_branch_name() -> String {
     let local_branch = get_current_branch();
 
     UserPrompt::new("==> Confirm Branch".to_string())
-        .add_option("Y".to_string(), local_branch.clone())
+        .add_option(
+            "Y".to_string(),
+            format!("Push to the remote branch: {}", local_branch.clone()),
+        )
         .add_option("M".to_string(), "Input branch manually.".to_string())
         .print();
 
