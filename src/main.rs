@@ -1,3 +1,4 @@
+use colored::*;
 use crossterm::event::{read, Event, KeyCode};
 use crossterm::terminal::disable_raw_mode;
 use crossterm::{event::poll, terminal::enable_raw_mode};
@@ -36,8 +37,12 @@ fn add_files() {
     }
 
     disable_raw_input();
-    println!("==> There are files ready to be added.");
-    println!("Please choose an option:\n\t- [Y]: Add all files\n\t- [Q]: Quit");
+    println!("\n==> There are files ready to be added.\nPlease choose an option:\n\t- [{}]: {}\n\t- [{}]: {}",
+        "Y".green().bold(),
+        "Add all files".blue(),
+        "Q".green().bold(),
+        "Quit".blue(),
+    );
 
     loop {
         enable_raw_input();
@@ -56,7 +61,7 @@ fn add_files() {
     }
 }
 
-static COMMIT_PROMPT: &str = "==> There are uncommitted changes. Please choose an option:\n\t- [Y]: Use AICommit to commit the files.\n\t- [M]: Enter commit message manually.\n\t- [Q]: Quit.";
+static COMMIT_PROMPT: &str = "\n==> There are uncommitted changes. Please choose an option:\n\t- [Y]: Use AICommit to commit the files.\n\t- [M]: Enter commit message manually.\n\t- [Q]: Quit.";
 
 fn commit() {
     disable_raw_input();
@@ -118,7 +123,7 @@ fn get_remote_name() -> String {
         remote
     } else if remotes.len() == 1 {
         disable_raw_input();
-        println!("==> There is only one remote repository.\nPlease choose an option:\n\t- [Y]: Push to the remote: {}.\n\t- [Q]: Quit.", remotes[0]);
+        println!("\n==> There is only one remote repository.\nPlease choose an option:\n\t- [Y]: Push to the remote: {}.\n\t- [Q]: Quit.", remotes[0]);
         loop {
             enable_raw_input();
             if let Event::Key(event) = read().unwrap() {
@@ -135,7 +140,7 @@ fn get_remote_name() -> String {
         }
     } else {
         disable_raw_input();
-        println!("Please choose a remote to push to:");
+        println!("\nPlease choose a remote to push to:");
         for (i, remote) in remotes.iter().enumerate() {
             println!("{}: {}", i + 1, remote);
         }
@@ -197,16 +202,19 @@ fn check_in_git_repo() {
 }
 
 fn report_error(msg: &str) {
+    disable_raw_input();
     println!("{}", msg);
     process::exit(1);
 }
 
 fn quit() {
+    disable_raw_input();
     println!("quiting...");
     process::exit(0);
 }
 
 fn report_ok(msg: &str) {
+    disable_raw_input();
     println!("{}", msg);
     process::exit(0);
 }
@@ -231,7 +239,7 @@ fn commit_files(msg: &str) {
         .expect("Failed to commit");
 }
 
-static COMMIT_EXEC_PROMPT: &str = "==> AICommit generated command:\nPlease choose an option:\n\t- [Y]: Execute the command\n\t- [R]: Regenerate command\n\t- [M]: Enter commit message manually\n\t- [Q]: Quit";
+static COMMIT_EXEC_PROMPT: &str = "\n==> AICommit generated command:\nPlease choose an option:\n\t- [Y]: Execute the command\n\t- [R]: Regenerate command\n\t- [M]: Enter commit message manually\n\t- [Q]: Quit";
 fn aicommit() {
     check_aicommit_installed();
     disable_raw_input(); // must disable raw mode, otherwise follow output will mess up the terminal
@@ -311,7 +319,7 @@ fn get_branch_name() -> String {
     let local_branch = get_current_branch();
 
     disable_raw_input();
-    println!("==> Please choose an branch:\n\t- [Y]: {}.\n\t- [M]: Input branch manually.\n\t- [Q]: Quit.\n", local_branch);
+    println!("\n==> Please choose an branch:\n\t- [Y]: {}.\n\t- [M]: Input branch manually.\n\t- [Q]: Quit.\n", local_branch);
 
     enable_raw_input();
     loop {
@@ -426,13 +434,10 @@ fn execute_aicommit() -> String {
 
 fn execute_commit_command(command: &str) {
     disable_raw_input();
-    println!("Executing: \n\t {}", command);
     let output = execute_command(command);
-
     if output.status.success() {
-        println!("Command executed successfully.");
         let stdout = String::from_utf8_lossy(&output.stdout);
-        println!("Output:\n{}", stdout);
+        println!("\nCommand executed successfully. Output:\n{}", stdout);
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
         report_error(&format!("Command execution failed: {}.", stderr));
@@ -440,6 +445,8 @@ fn execute_commit_command(command: &str) {
 }
 
 fn execute_command(command: &str) -> Output {
+    disable_raw_input();
+    println!("Executing: \n\t {}", command.blue().bold());
     Command::new("sh")
         .arg("-c")
         .arg(command)
