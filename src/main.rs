@@ -428,6 +428,7 @@ fn execute_aicommit() -> String {
         *CODE_BORDER_FG_COLOR,
         format!("{:-^50}", "AICOMMIT END".to_string()),
     );
+    colorful_print(*PROMPT_BG_COLOR, *CODE_BORDER_FG_COLOR, "\n".to_string());
     let output = child.wait().expect("Failed to wait on child");
 
     if !output.success() {
@@ -441,7 +442,11 @@ fn execute_commit_command(command: &str) {
     let output = execute_command(command);
     if output.status.success() {
         let stdout = String::from_utf8_lossy(&output.stdout);
-        output_success_result("\nCommand executed successfully. Output:\n");
+        colorful_print(
+            *PROMPT_BG_COLOR,
+            *PROMPT_NOTICE_FG_COLOR,
+            "\nCommand executed successfully. Output:\n".to_string(),
+        );
         colorful_print(
             *PROMPT_BG_COLOR,
             *OUTTER_OUTPUT_FG_COLOR,
