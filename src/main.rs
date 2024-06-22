@@ -447,7 +447,7 @@ fn execute_aicommit() -> String {
         colorful_print_with_bold(*CODE_BG_COLOR, *CODE_FG_COLOR, content);
         sleep(Duration::from_millis(300));
     }
-    colorful_print(*CODE_BG_COLOR, *CODE_FG_COLOR, "\n".to_string());
+    colorful_print(*CODE_BG_COLOR, *CODE_BORDER_FG_COLOR, "\n".to_string());
 
     colorful_print(
         *PROMPT_BG_COLOR,
