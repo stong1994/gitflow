@@ -1,13 +1,12 @@
 use crossterm::event::{read, Event, KeyCode};
+use crossterm::execute;
 use crossterm::style::{
     Attribute, Color, Print, ResetColor, SetAttribute, SetBackgroundColor, SetForegroundColor,
-    StyledContent, Stylize,
 };
 use crossterm::terminal::disable_raw_mode;
 use crossterm::{event::poll, terminal::enable_raw_mode};
-use crossterm::{execute, ExecutableCommand};
 use lazy_static::lazy_static;
-use std::io::{stdout, BufRead, BufReader, Stdout, Write};
+use std::io::{stdout, BufRead, BufReader};
 use std::process::{Command, Output, Stdio};
 use std::thread::sleep;
 use std::time::Duration;
@@ -17,9 +16,7 @@ fn main() {
     check_git_installed();
     check_in_git_repo();
 
-    if !has_file_added() {
-        add_files();
-    }
+    add();
     if has_uncommitted_changes() {
         commit();
     }
@@ -36,12 +33,38 @@ fn has_file_added() -> bool {
     !output.stdout.is_empty()
 }
 
-fn add_files() {
+fn add() {
+    if has_file_added() {
+        UserPrompt::new("\n==> There are files have been added.".to_string())
+            .add_option("Y".to_string(), "Don't add other files".to_string())
+            .add_option("A".to_string(), "Add all files".to_string())
+            .print();
+
+        loop {
+            enable_raw_input();
+            if let Ok(Event::Key(event)) = read() {
+                match event.code {
+                    KeyCode::Char('y') => {
+                        break;
+                    }
+                    KeyCode::Char('a') => {
+                        git_add(true);
+                        break;
+                    }
+                    KeyCode::Char('q') => quit(),
+                    _ => {
+                        output_invalid_type();
+                    }
+                }
+            }
+        }
+        return;
+    }
     if !any_changes() {
         return;
     }
 
-    UserPrompt::new("==> There are files ready to be added.".to_string())
+    UserPrompt::new("\n==> There are files ready to be added.".to_string())
         .add_option("Y".to_string(), "Add all files".to_string())
         .print();
 
@@ -236,7 +259,7 @@ fn aicommit() {
     colorful_print(
         *PROMPT_BG_COLOR,
         *PROMPT_NOTICE_FG_COLOR,
-        "\n==> generating command by aicommit, please wait a monment ....\n".to_string(),
+        "\n==> generating command by aicommit, please wait a moment ....\n".to_string(),
     );
     let command = execute_aicommit();
     UserPrompt::new("==> AICommit generated command".to_string())
@@ -381,7 +404,7 @@ fn git_push(remote: &str, branch: &str) {
     colorful_print(
         *PROMPT_BG_COLOR,
         *PROMPT_NOTICE_FG_COLOR,
-        "Pushing code, please wait a monment...\n".to_string(),
+        "Pushing code, please wait a moment...\n".to_string(),
     );
     let output = Command::new("git")
         .arg("push")
