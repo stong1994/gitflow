@@ -45,7 +45,8 @@ impl<'a> Choose<'a> {
             if let Ok(Event::Key(event)) = read() {
                 if let KeyCode::Char(c) = event.code {
                     for option in self.options.iter() {
-                        if c == option.action.option {
+                        let key = option.action.option;
+                        if c == key || c == key.to_ascii_lowercase() {
                             return option.action.action.call();
                         }
                     }
