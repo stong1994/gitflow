@@ -40,24 +40,18 @@ fn add() {
             .add_option("A".to_string(), "Add all files".to_string())
             .print();
 
-        loop {
-            enable_raw_input();
-            if let Ok(Event::Key(event)) = read() {
-                match event.code {
-                    KeyCode::Char('y') => {
-                        break;
-                    }
-                    KeyCode::Char('a') => {
-                        git_add(true);
-                        break;
-                    }
-                    KeyCode::Char('q') => quit(),
-                    _ => {
-                        output_invalid_type();
-                    }
-                }
-            }
-        }
+        choose(&[
+            OptionAction {
+                option: 'y',
+                action: Box::new(|| {}),
+            },
+            OptionAction {
+                option: 'a',
+                action: Box::new(|| {
+                    git_add(true);
+                }),
+            },
+        ]);
         return;
     }
     if !any_changes() {
@@ -68,21 +62,12 @@ fn add() {
         .add_option("Y".to_string(), "Add all files".to_string())
         .print();
 
-    loop {
-        enable_raw_input();
-        if let Ok(Event::Key(event)) = read() {
-            match event.code {
-                KeyCode::Char('y') => {
-                    git_add(true);
-                    break;
-                }
-                KeyCode::Char('q') => quit(),
-                _ => {
-                    output_invalid_type();
-                }
-            }
-        }
-    }
+    choose(&[OptionAction {
+        option: 'y',
+        action: Box::new(|| {
+            git_add(true);
+        }),
+    }]);
 }
 
 fn commit() {
@@ -166,6 +151,7 @@ fn get_remote_name() -> String {
         remotes.iter().enumerate().for_each(|(i, remote)| {
             prompt.add_option(i.to_string(), remote.to_string());
         });
+        prompt.print();
 
         loop {
             enable_raw_input();
@@ -447,7 +433,7 @@ fn execute_aicommit() -> String {
         colorful_print_with_bold(*CODE_BG_COLOR, *CODE_FG_COLOR, content);
         sleep(Duration::from_millis(300));
     }
-    colorful_print(*CODE_BG_COLOR, *CODE_BORDER_FG_COLOR, "\n".to_string());
+    colorful_print(*PROMPT_BG_COLOR, *CODE_BORDER_FG_COLOR, "\n".to_string());
 
     colorful_print(
         *PROMPT_BG_COLOR,
@@ -641,4 +627,33 @@ fn hex_to_color(hex: &str) -> crossterm::style::Color {
     let b = u8::from_str_radix(&hex[5..7], 16).unwrap();
 
     crossterm::style::Color::Rgb { r, g, b }
+}
+struct OptionAction {
+    option: char,
+    action: Box<dyn Fn()>,
+}
+
+fn choose(options: &[OptionAction]) {
+    loop {
+        enable_raw_input();
+        if let Ok(Event::Key(event)) = read() {
+            match event.code {
+                KeyCode::Char(c) => {
+                    if c == 'q' {
+                        quit();
+                    }
+                    for option in options {
+                        if c == option.option {
+                            (option.action)();
+                            return;
+                        }
+                    }
+                    output_invalid_type();
+                }
+                _ => {
+                    output_invalid_type();
+                }
+            }
+        }
+    }
 }
