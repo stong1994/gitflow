@@ -106,47 +106,51 @@ impl<'a> UserPrompt<'a> {
         );
 
         for option in &self.options {
-            colorful_print(
-                *PROMPT_BG_COLOR,
-                *PROMPT_OPTIONI_DESC_FG_COLOR,
-                "\n\t- [".to_string(),
-            );
-            colorful_print_with_bold(
-                *PROMPT_BG_COLOR,
-                *PROMPT_OPTIONI_KEY_FG_COLOR,
-                option.key.to_string(),
-            );
-            colorful_print(
-                *PROMPT_BG_COLOR,
-                *PROMPT_OPTIONI_DESC_FG_COLOR,
-                "]: ".to_string(),
-            );
-            colorful_print(
-                *PROMPT_BG_COLOR,
-                *PROMPT_OPTIONI_DESC_FG_COLOR,
-                format!("{}\n", option.desc),
-            );
+            if option.key == 'Q' {
+                // TODO: more clean
+                // print quit option
+                colorful_print(
+                    *PROMPT_BG_COLOR,
+                    *PROMPT_OPTIONI_DESC_FG_COLOR,
+                    "\n\t- [".to_string(),
+                );
+                colorful_print_with_bold(
+                    *PROMPT_BG_COLOR,
+                    *PROMPT_OPTIONI_QUITKEY_FG_COLOR,
+                    "Q".to_string(),
+                );
+                colorful_print(
+                    *PROMPT_BG_COLOR,
+                    *PROMPT_OPTIONI_DESC_FG_COLOR,
+                    "]: ".to_string(),
+                );
+                colorful_print(
+                    *PROMPT_BG_COLOR,
+                    *PROMPT_OPTIONI_DESC_FG_COLOR,
+                    "Quit\n".to_string(),
+                );
+            } else {
+                colorful_print(
+                    *PROMPT_BG_COLOR,
+                    *PROMPT_OPTIONI_DESC_FG_COLOR,
+                    "\n\t- [".to_string(),
+                );
+                colorful_print_with_bold(
+                    *PROMPT_BG_COLOR,
+                    *PROMPT_OPTIONI_KEY_FG_COLOR,
+                    option.key.to_string(),
+                );
+                colorful_print(
+                    *PROMPT_BG_COLOR,
+                    *PROMPT_OPTIONI_DESC_FG_COLOR,
+                    "]: ".to_string(),
+                );
+                colorful_print(
+                    *PROMPT_BG_COLOR,
+                    *PROMPT_OPTIONI_DESC_FG_COLOR,
+                    format!("{}\n", option.desc),
+                );
+            }
         }
-        // print quit option
-        colorful_print(
-            *PROMPT_BG_COLOR,
-            *PROMPT_OPTIONI_DESC_FG_COLOR,
-            "\n\t- [".to_string(),
-        );
-        colorful_print_with_bold(
-            *PROMPT_BG_COLOR,
-            *PROMPT_OPTIONI_QUITKEY_FG_COLOR,
-            "Q".to_string(),
-        );
-        colorful_print(
-            *PROMPT_BG_COLOR,
-            *PROMPT_OPTIONI_DESC_FG_COLOR,
-            "]: ".to_string(),
-        );
-        colorful_print(
-            *PROMPT_BG_COLOR,
-            *PROMPT_OPTIONI_DESC_FG_COLOR,
-            "Quit\n".to_string(),
-        );
     }
 }
