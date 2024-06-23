@@ -43,18 +43,13 @@ impl<'a> Choose<'a> {
         loop {
             enable_raw_input();
             if let Ok(Event::Key(event)) = read() {
-                match event.code {
-                    KeyCode::Char(c) => {
-                        for option in self.options.iter() {
-                            if c == option.action.option {
-                                return option.action.action.call();
-                            }
+                if let KeyCode::Char(c) = event.code {
+                    for option in self.options.iter() {
+                        if c == option.action.option {
+                            return option.action.action.call();
                         }
-                        output_invalid_type();
                     }
-                    _ => {
-                        output_invalid_type();
-                    }
+                    output_invalid_type();
                 }
             }
         }
