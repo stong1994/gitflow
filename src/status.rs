@@ -64,7 +64,7 @@ impl Status {
                 branch_name,
             } => git_push(remote_name, branch_name),
             Self::Success => {
-                output_success("Success!")?;
+                output_success("Good job, bye!")?;
                 process::exit(0)
             }
             Self::Failure(msg) => {
@@ -72,7 +72,7 @@ impl Status {
                 process::exit(1)
             }
             Self::QuitPressed => {
-                quit();
+                quit()?;
                 process::exit(0)
             }
         }

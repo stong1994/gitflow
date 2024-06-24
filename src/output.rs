@@ -113,15 +113,3 @@ pub fn output_notice(notice: &str) -> Result<()> {
         format!("\n{}", notice).to_string(),
     )
 }
-
-fn execute_command(command: &str) -> Result<Output> {
-    colorful_print(
-        Styles::new(*PROMPT_BG_COLOR, *PROMPT_NOTICE_FG_COLOR),
-        "\nExecuting:".to_string(),
-    )?;
-    colorful_print(
-        Styles::new(*PROMPT_BG_COLOR, *COMMAND_FG_COLOR),
-        format!("\t{}", command).to_string(),
-    )?;
-    exec(command)
-}

@@ -1,8 +1,6 @@
 use anyhow::{bail, Context, Result};
 use std::process::{Command, Output};
 
-use crate::output::output_success_result;
-
 pub fn add_all() -> Result<()> {
     Command::new("git")
         .arg("add")

@@ -41,7 +41,7 @@ impl<'a> Choose<'a> {
     }
     fn choose(&self) -> Result<Status> {
         loop {
-            enable_raw_input();
+            enable_raw_input()?;
             if let Ok(Event::Key(event)) = read() {
                 if let KeyCode::Char(c) = event.code {
                     for option in self.options.iter() {

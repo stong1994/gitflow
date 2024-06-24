@@ -37,15 +37,15 @@ pub enum Action {
 impl Action {
     pub fn call(&self) -> Result<Status> {
         match self {
-            Action::NotAddFiles => Ok(Status::AddFinished),
-            Action::EnterBranchNameManually(remote_name) => input_branch(remote_name.to_string()),
-            Action::AddAll => {
+            Self::NotAddFiles => Ok(Status::AddFinished),
+            Self::EnterBranchNameManually(remote_name) => input_branch(remote_name.to_string()),
+            Self::AddAll => {
                 add_all()?;
                 output_success_result("\nAll files have been added.")?;
                 Ok(Status::AddFinished)
             }
-            Action::GenerateCommitCommand => ai_generae_commit(),
-            Action::ExecuteCommitCommand(commit_message) => {
+            Self::GenerateCommitCommand => ai_generae_commit(),
+            Self::ExecuteCommitCommand(commit_message) => {
                 commit_files(commit_message)?;
                 output_success_result("\nFiles have been committed.")?;
                 Ok(Status::CommitFinished)
@@ -57,7 +57,7 @@ impl Action {
                 branch_name: branch.to_string(),
             }),
             Self::EnterCommitMessageManually => input_commit_manually(),
-            Action::Quit => Ok(Status::QuitPressed),
+            Self::Quit => Ok(Status::QuitPressed),
         }
     }
 }

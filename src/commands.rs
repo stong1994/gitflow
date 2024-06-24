@@ -1,11 +1,11 @@
 use std::{
     env,
-    process::{self, Command, Output},
+    process::{Command, Output},
 };
 
 use anyhow::{Context, Result};
 
-use crate::input::disable_raw_input;
+use crate::{input::disable_raw_input, output::output_notice};
 
 pub fn check_git_installed() -> Result<bool> {
     check_command_installed("git").context("Failed to check git installed")
@@ -23,10 +23,10 @@ pub fn check_command_installed(command: &str) -> Result<bool> {
     Ok(!output.stdout.is_empty())
 }
 
-pub fn quit() {
-    disable_raw_input();
-    println!("quiting...");
-    process::exit(0);
+pub fn quit() -> Result<()> {
+    disable_raw_input()?;
+    output_notice("quiting...")?;
+    Ok(())
 }
 
 pub fn exec(command: &str) -> Result<Output> {
