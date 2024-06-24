@@ -26,13 +26,6 @@ lazy_static! {
     pub static ref OUTTER_OUTPUT_FG_COLOR: Color = hex_to_color("#5356FF");
 }
 
-pub fn output_success_result(result: &str) -> Result<()> {
-    colorful_print(
-        Styles::new(*PROMPT_BG_COLOR, *PROMPT_SUCCESS_FG_COLOR),
-        result.to_string(),
-    )
-}
-
 pub struct Styles {
     pub bg: Option<Color>,
     pub fg: Option<Color>,
@@ -58,7 +51,7 @@ impl Styles {
 }
 
 pub fn colorful_print(colors: Styles, content: String) -> Result<()> {
-    disable_raw_input();
+    disable_raw_input()?;
 
     let mut o = stdout();
     if let Some(bg) = colors.bg {
@@ -75,19 +68,6 @@ pub fn colorful_print(colors: Styles, content: String) -> Result<()> {
     Ok(())
 }
 
-// TODO: refacor
-pub fn colorful_print_with_bold(bg: Color, fg: Color, content: String) {
-    disable_raw_input();
-    execute!(
-        stdout(),
-        SetForegroundColor(fg),
-        SetBackgroundColor(bg),
-        SetAttribute(Attribute::Bold),
-        Print(content),
-        ResetColor
-    )
-    .expect("Failed to colorful print");
-}
 fn hex_to_color(hex: &str) -> crossterm::style::Color {
     let r = u8::from_str_radix(&hex[1..3], 16).unwrap();
     let g = u8::from_str_radix(&hex[3..5], 16).unwrap();
@@ -97,20 +77,41 @@ fn hex_to_color(hex: &str) -> crossterm::style::Color {
 }
 
 pub fn output_invalid_type() -> Result<()> {
+    disable_raw_input()?;
     colorful_print(
         Styles::new(*PROMPT_BG_COLOR, *PROMPT_ERR_FG_COLOR),
         "Invalid input. Please try again.\n".to_string(),
     )
 }
 
-pub fn report_error(msg: &str) {
-    disable_raw_input();
-    println!("{}", msg);
+pub fn output_error(msg: &str) -> Result<()> {
+    disable_raw_input()?;
+    colorful_print(
+        Styles::new(*PROMPT_BG_COLOR, *PROMPT_ERR_FG_COLOR),
+        msg.to_string(),
+    )
 }
 
-pub fn report_success(msg: &str) {
-    disable_raw_input();
-    println!("{}", msg);
+pub fn output_success(msg: &str) -> Result<()> {
+    disable_raw_input()?;
+    colorful_print(
+        Styles::new(*PROMPT_BG_COLOR, *PROMPT_SUCCESS_FG_COLOR),
+        msg.to_string(),
+    )
+}
+
+pub fn output_success_result(result: &str) -> Result<()> {
+    colorful_print(
+        Styles::new(*PROMPT_BG_COLOR, *PROMPT_SUCCESS_FG_COLOR),
+        result.to_string(),
+    )
+}
+
+pub fn output_notice(notice: &str) -> Result<()> {
+    colorful_print(
+        Styles::new(*PROMPT_BG_COLOR, *PROMPT_NOTICE_FG_COLOR),
+        format!("\n{}", notice).to_string(),
+    )
 }
 
 fn execute_command(command: &str) -> Result<Output> {

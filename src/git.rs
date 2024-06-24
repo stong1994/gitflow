@@ -9,7 +9,6 @@ pub fn add_all() -> Result<()> {
         .arg("--all")
         .output()
         .context("git add failed")?;
-    output_success_result("\nAll files have been added.")?; // TODO:
     Ok(())
 }
 
@@ -101,7 +100,7 @@ pub fn has_uncommitted_changes() -> Result<bool> {
     Ok(!output.status.success())
 }
 
-pub fn set_remote(name: String, url: String) -> Result<()> {
+pub fn add_remote(name: String, url: String) -> Result<()> {
     let output = Command::new("git")
         .arg("remote")
         .arg("add")

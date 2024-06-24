@@ -6,17 +6,15 @@ use std::time::Duration;
 
 use crate::commands::check_aicommit_installed;
 use crate::git::*;
-use crate::input::input_branch_name;
-use crate::input::input_commit_message;
-use crate::input::input_remote_name;
-use crate::input::input_remote_url;
+use crate::input::read_line;
+use crate::output::colorful_print;
+use crate::output::output_success_result;
 use crate::output::Styles;
 use crate::output::CODE_BG_COLOR;
 use crate::output::CODE_BORDER_FG_COLOR;
 use crate::output::CODE_FG_COLOR;
 use crate::output::PROMPT_BG_COLOR;
 use crate::output::PROMPT_NOTICE_FG_COLOR;
-use crate::output::{colorful_print, colorful_print_with_bold};
 use crate::status::Status;
 use anyhow::bail;
 use anyhow::Context;
@@ -43,11 +41,13 @@ impl Action {
             Action::EnterBranchNameManually(remote_name) => input_branch(remote_name.to_string()),
             Action::AddAll => {
                 add_all()?;
+                output_success_result("\nAll files have been added.")?;
                 Ok(Status::AddFinished)
             }
-            Action::GenerateCommitCommand => ai_generae_commit(), //TODO: reaname
+            Action::GenerateCommitCommand => ai_generae_commit(),
             Action::ExecuteCommitCommand(commit_message) => {
                 commit_files(commit_message)?;
+                output_success_result("\nFiles have been committed.")?;
                 Ok(Status::CommitFinished)
             }
             Self::AddRemote => git_add_remote(),
@@ -56,7 +56,7 @@ impl Action {
                 remote_name: remote.to_string(),
                 branch_name: branch.to_string(),
             }),
-            Self::EnterCommitMessageManually => commit_manually(),
+            Self::EnterCommitMessageManually => input_commit_manually(),
             Action::Quit => Ok(Status::QuitPressed),
         }
     }
@@ -96,7 +96,8 @@ fn execute_aicommit() -> Result<String> {
 
         let content = String::from_utf8(word).context("Failed to convert word to string")?;
         full_output.push_str(&content);
-        colorful_print_with_bold(*CODE_BG_COLOR, *CODE_FG_COLOR, content);
+
+        colorful_print(Styles::with_bold(*CODE_BG_COLOR, *CODE_FG_COLOR), content)?;
         sleep(Duration::from_millis(300));
     }
     colorful_print(
@@ -120,14 +121,13 @@ fn execute_aicommit() -> Result<String> {
     Ok(full_output)
 }
 
-fn commit_manually() -> Result<Status> {
-    let commit_message = input_commit_message()?;
-    commit_files(&commit_message)?;
-    Ok(Status::CommitFinished)
+fn input_commit_manually() -> Result<Status> {
+    let commit_message = read_line("Please input commit message:")?;
+    Ok(Status::CommitMessageGenerated(commit_message))
 }
 
 fn input_branch(remote_name: String) -> Result<Status> {
-    let branch_name = input_branch_name()?;
+    let branch_name = read_line("Please input branch name:")?;
     Ok(Status::BranchSelected {
         branch_name,
         remote_name,
@@ -135,9 +135,9 @@ fn input_branch(remote_name: String) -> Result<Status> {
 }
 
 fn git_add_remote() -> Result<Status> {
-    let name = input_remote_name()?;
-    let url = input_remote_url(name.clone())?;
-    set_remote(name.clone(), url)?;
-
+    let name = read_line("Please input the remote name")?;
+    let url = read_line(&format!("Please input the url of {}.", name))?;
+    add_remote(name.clone(), url)?;
+    output_success_result("\nRemote has been added.")?;
     Ok(Status::RemoteSelected(name))
 }

@@ -11,7 +11,7 @@ use crate::{
         any_changes, check_in_git_repo, get_current_branch, get_remote_names, has_file_added,
         has_uncommitted_changes, push,
     },
-    output::{colorful_print, output_success_result, report_error, report_success},
+    output::{colorful_print, output_error, output_success, output_success_result},
 };
 
 #[derive(Clone)]
@@ -35,57 +35,40 @@ pub enum Status {
 }
 
 impl Status {
-    pub fn call(&self) -> Status {
+    pub fn call(&self) -> Self {
+        match self._call() {
+            Ok(status) => status,
+            Err(err) => Self::Failure(err.to_string()),
+        }
+    }
+
+    fn _call(&self) -> Result<Self> {
         match self {
-            Status::Begin => match pre_check() {
-                Ok(true) => Status::PreCheckPast,
-                Ok(false) => Status::Failure("Pre check not past.".to_string()),
-                Err(err) => Status::Failure(err.to_string()),
+            Self::Begin => match pre_check()? {
+                true => Ok(Self::PreCheckPast),
+                false => Ok(Self::Failure("Pre check not past.".to_string())),
             },
 
-            Status::PreCheckPast => match has_file_added() {
-                Ok(true) => Status::FileHasAdded,
-                Ok(false) => match try_add_all() {
-                    Ok(status) => status,
-                    Err(err) => Status::Failure(err.to_string()),
-                },
-                Err(err) => Status::Failure(err.to_string()),
+            Self::PreCheckPast => match has_file_added()? {
+                true => Ok(Self::FileHasAdded),
+                false => try_add_all(),
             },
-            Status::FileHasAdded => file_added(),
-            Self::AddFinished => match commit() {
-                Ok(status) => status,
-                Err(err) => Status::Failure(err.to_string()),
-            },
-            Self::CommitMessageGenerated(command) => match confirm_message(command.clone()) {
-                Ok(status) => status,
-                Err(err) => Status::Failure(err.to_string()),
-            },
-            Self::CommitMessageCofnfirmed(message) => match commit_message(message.clone()) {
-                Ok(status) => status,
-                Err(err) => Status::Failure(err.to_string()),
-            },
-            Self::CommitFinished => match select_remote() {
-                Ok(status) => status,
-                Err(err) => Status::Failure(err.to_string()),
-            },
-            Self::RemoteSelected(remote) => match select_branch(remote.to_string()) {
-                Ok(status) => status,
-                Err(err) => Status::Failure(err.to_string()),
-            },
-
-            Status::BranchSelected {
+            Self::FileHasAdded => Ok(file_added()),
+            Self::AddFinished => commit(),
+            Self::CommitMessageGenerated(command) => confirm_message(command.clone()),
+            Self::CommitMessageCofnfirmed(message) => commit_message(message.clone()),
+            Self::CommitFinished => select_remote(),
+            Self::RemoteSelected(remote) => select_branch(remote.to_string()),
+            Self::BranchSelected {
                 remote_name,
                 branch_name,
-            } => match git_push(remote_name, branch_name) {
-                Ok(status) => status,
-                Err(err) => Status::Failure(err.to_string()),
-            },
-            Status::Success => {
-                report_success("Success!");
+            } => git_push(remote_name, branch_name),
+            Self::Success => {
+                output_success("Success!")?;
                 process::exit(0)
             }
-            Status::Failure(msg) => {
-                report_error(msg);
+            Self::Failure(msg) => {
+                output_error(msg)?;
                 process::exit(1)
             }
             Self::QuitPressed => {
