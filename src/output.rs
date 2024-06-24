@@ -1,14 +1,11 @@
-use std::io::stdout;
-use std::process::Output;
-
-use crate::commands::exec;
 use crate::input::disable_raw_input;
 use anyhow::Result;
 use crossterm::style::{
     Attribute, Color, Print, ResetColor, SetAttribute, SetBackgroundColor, SetForegroundColor,
 };
-use crossterm::{execute, ExecutableCommand};
+use crossterm::ExecutableCommand;
 use lazy_static::lazy_static;
+use std::io::stdout;
 
 lazy_static! {
     pub static ref PROMPT_BG_COLOR: Color = hex_to_color("#222831");
