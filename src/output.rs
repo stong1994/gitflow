@@ -65,7 +65,7 @@ pub fn colorful_print(colors: Styles, content: String) -> Result<()> {
         o.execute(SetBackgroundColor(bg))?;
     }
     if let Some(fg) = colors.fg {
-        o.execute(SetBackgroundColor(fg))?;
+        o.execute(SetForegroundColor(fg))?;
     }
     if colors.bold.is_some() {
         o.execute(SetAttribute(Attribute::Bold))?;
