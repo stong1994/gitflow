@@ -10,6 +10,7 @@ use crate::input::input_branch_name;
 use crate::input::input_commit_message;
 use crate::input::input_remote_name;
 use crate::input::input_remote_url;
+use crate::output::Styles;
 use crate::output::CODE_BG_COLOR;
 use crate::output::CODE_BORDER_FG_COLOR;
 use crate::output::CODE_FG_COLOR;
@@ -66,10 +67,9 @@ fn ai_generae_commit() -> Result<Status> {
         bail!("AICommit is not installed.")
     }
     colorful_print(
-        *PROMPT_BG_COLOR,
-        *PROMPT_NOTICE_FG_COLOR,
+        Styles::new(*PROMPT_BG_COLOR, *PROMPT_NOTICE_FG_COLOR),
         "\n==> generating command by aicommit, please wait a moment ....\n".to_string(),
-    );
+    )?;
     let command = execute_aicommit()?;
 
     Ok(Status::CommitMessageGenerated(command))
@@ -77,10 +77,9 @@ fn ai_generae_commit() -> Result<Status> {
 
 fn execute_aicommit() -> Result<String> {
     colorful_print(
-        *PROMPT_BG_COLOR,
-        *CODE_BORDER_FG_COLOR,
+        Styles::new(*PROMPT_BG_COLOR, *CODE_BORDER_FG_COLOR),
         format!("{:-^50}\n", "AICOMMIT BEGIN".to_string()),
-    );
+    )?;
     let mut child = Command::new("aicommit")
         .stdout(Stdio::piped())
         .spawn()
@@ -100,14 +99,19 @@ fn execute_aicommit() -> Result<String> {
         colorful_print_with_bold(*CODE_BG_COLOR, *CODE_FG_COLOR, content);
         sleep(Duration::from_millis(300));
     }
-    colorful_print(*PROMPT_BG_COLOR, *CODE_BORDER_FG_COLOR, "\n".to_string());
+    colorful_print(
+        Styles::new(*PROMPT_BG_COLOR, *CODE_BORDER_FG_COLOR),
+        "\n".to_string(),
+    )?;
 
     colorful_print(
-        *PROMPT_BG_COLOR,
-        *CODE_BORDER_FG_COLOR,
+        Styles::new(*PROMPT_BG_COLOR, *CODE_BORDER_FG_COLOR),
         format!("{:-^50}", "AICOMMIT END".to_string()),
-    );
-    colorful_print(*PROMPT_BG_COLOR, *CODE_BORDER_FG_COLOR, "\n".to_string());
+    )?;
+    colorful_print(
+        Styles::new(*PROMPT_BG_COLOR, *CODE_BORDER_FG_COLOR),
+        "\n".to_string(),
+    )?;
     let output = child.wait().context("Failed to wait on child")?;
 
     if !output.success() {

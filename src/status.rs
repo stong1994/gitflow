@@ -2,7 +2,7 @@ use anyhow::{bail, Context, Result};
 use std::process;
 
 use crate::git::commit_files;
-use crate::output::{OUTTER_OUTPUT_FG_COLOR, PROMPT_BG_COLOR, PROMPT_NOTICE_FG_COLOR};
+use crate::output::{Styles, OUTTER_OUTPUT_FG_COLOR, PROMPT_BG_COLOR, PROMPT_NOTICE_FG_COLOR};
 use crate::{
     actions::Action,
     choose::{Choose, OptionAction},
@@ -117,14 +117,13 @@ fn pre_check() -> Result<bool> {
 
 fn git_push(remote: &str, branch: &str) -> Result<Status> {
     colorful_print(
-        *PROMPT_BG_COLOR,
-        *PROMPT_NOTICE_FG_COLOR,
+        Styles::new(*PROMPT_BG_COLOR, *PROMPT_NOTICE_FG_COLOR),
         "Pushing code, please wait a moment...\n".to_string(),
-    );
+    )?;
 
     let output = push(remote, branch)?;
     if output.status.success() {
-        output_success_result(&format!("Pushed to {} successfully.", remote));
+        output_success_result(&format!("Pushed to {} successfully.\n", remote))?;
         Ok(Status::Success)
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -235,15 +234,13 @@ fn commit_message(command: String) -> Result<Status> {
     if output.status.success() {
         let stdout = String::from_utf8_lossy(&output.stdout);
         colorful_print(
-            *PROMPT_BG_COLOR,
-            *PROMPT_NOTICE_FG_COLOR,
+            Styles::new(*PROMPT_BG_COLOR, *PROMPT_NOTICE_FG_COLOR),
             "\nCommand executed successfully. Output:\n".to_string(),
-        );
+        )?;
         colorful_print(
-            *PROMPT_BG_COLOR,
-            *OUTTER_OUTPUT_FG_COLOR,
+            Styles::new(*PROMPT_BG_COLOR, *OUTTER_OUTPUT_FG_COLOR),
             stdout.to_string(),
-        );
+        )?;
         Ok(Status::CommitFinished)
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);

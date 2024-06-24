@@ -32,12 +32,12 @@ impl<'a> Choose<'a> {
         self
     }
 
-    fn prompt(&self) {
+    fn prompt(&self) -> Result<()> {
         let mut up = UserPrompt::new(self.prompt);
         for option in self.options.iter() {
             up.add_option(option.action.option, option.prompt);
         }
-        up.print();
+        up.print()
     }
     fn choose(&self) -> Result<Status> {
         loop {
@@ -50,14 +50,14 @@ impl<'a> Choose<'a> {
                             return option.action.action.call();
                         }
                     }
-                    output_invalid_type();
+                    output_invalid_type()?;
                 }
             }
         }
     }
 
     pub fn prompt_choose(&self) -> Result<Status> {
-        self.prompt();
+        self.prompt()?;
         self.choose()
     }
 }
@@ -98,59 +98,36 @@ impl<'a> UserPrompt<'a> {
         self
     }
 
-    fn print(&self) {
+    fn print(&self) -> Result<()> {
         colorful_print(
-            *PROMPT_BG_COLOR,
-            *PROMPT_FG_COLOR,
+            Styles::new(*PROMPT_BG_COLOR, *PROMPT_FG_COLOR),
             format!("\n==> {}\n\nPlease choose an option:\n", self.prompt),
-        );
+        )?;
 
         for option in &self.options {
-            if option.key == 'Q' {
-                // TODO: more clean
-                // print quit option
-                colorful_print(
-                    *PROMPT_BG_COLOR,
-                    *PROMPT_OPTIONI_DESC_FG_COLOR,
-                    "\n\t- [".to_string(),
-                );
-                colorful_print_with_bold(
-                    *PROMPT_BG_COLOR,
-                    *PROMPT_OPTIONI_QUITKEY_FG_COLOR,
-                    "Q".to_string(),
-                );
-                colorful_print(
-                    *PROMPT_BG_COLOR,
-                    *PROMPT_OPTIONI_DESC_FG_COLOR,
-                    "]: ".to_string(),
-                );
-                colorful_print(
-                    *PROMPT_BG_COLOR,
-                    *PROMPT_OPTIONI_DESC_FG_COLOR,
-                    "Quit\n".to_string(),
-                );
-            } else {
-                colorful_print(
-                    *PROMPT_BG_COLOR,
-                    *PROMPT_OPTIONI_DESC_FG_COLOR,
-                    "\n\t- [".to_string(),
-                );
-                colorful_print_with_bold(
-                    *PROMPT_BG_COLOR,
-                    *PROMPT_OPTIONI_KEY_FG_COLOR,
-                    option.key.to_string(),
-                );
-                colorful_print(
-                    *PROMPT_BG_COLOR,
-                    *PROMPT_OPTIONI_DESC_FG_COLOR,
-                    "]: ".to_string(),
-                );
-                colorful_print(
-                    *PROMPT_BG_COLOR,
-                    *PROMPT_OPTIONI_DESC_FG_COLOR,
-                    format!("{}\n", option.desc),
-                );
-            }
+            colorful_print(
+                Styles::new(*PROMPT_BG_COLOR, *PROMPT_OPTIONI_DESC_FG_COLOR),
+                "\n\t- [".to_string(),
+            )?;
+            // TODO: more clean
+            // print quit option
+            colorful_print(
+                if option.key == 'Q' {
+                    Styles::with_bold(*PROMPT_BG_COLOR, *PROMPT_OPTIONI_QUITKEY_FG_COLOR)
+                } else {
+                    Styles::with_bold(*PROMPT_BG_COLOR, *PROMPT_OPTIONI_KEY_FG_COLOR)
+                },
+                option.key.to_string(),
+            )?;
+            colorful_print(
+                Styles::new(*PROMPT_BG_COLOR, *PROMPT_OPTIONI_DESC_FG_COLOR),
+                "]: ".to_string(),
+            )?;
+            colorful_print(
+                Styles::new(*PROMPT_BG_COLOR, *PROMPT_OPTIONI_DESC_FG_COLOR),
+                format!("{}\n", option.desc).to_string(),
+            )?;
         }
+        Ok(())
     }
 }

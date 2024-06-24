@@ -4,10 +4,10 @@ use std::process::Output;
 use crate::commands::exec;
 use crate::input::disable_raw_input;
 use anyhow::Result;
-use crossterm::execute;
 use crossterm::style::{
     Attribute, Color, Print, ResetColor, SetAttribute, SetBackgroundColor, SetForegroundColor,
 };
+use crossterm::{execute, ExecutableCommand};
 use lazy_static::lazy_static;
 
 lazy_static! {
@@ -26,24 +26,53 @@ lazy_static! {
     pub static ref OUTTER_OUTPUT_FG_COLOR: Color = hex_to_color("#5356FF");
 }
 
-pub fn output_success_result(result: &str) {
+pub fn output_success_result(result: &str) -> Result<()> {
     colorful_print(
-        *PROMPT_BG_COLOR,
-        *PROMPT_SUCCESS_FG_COLOR,
+        Styles::new(*PROMPT_BG_COLOR, *PROMPT_SUCCESS_FG_COLOR),
         result.to_string(),
-    );
+    )
 }
 
-pub fn colorful_print(bg: Color, fg: Color, content: String) {
+pub struct Styles {
+    pub bg: Option<Color>,
+    pub fg: Option<Color>,
+    pub bold: Option<bool>,
+}
+
+impl Styles {
+    pub fn new(bg: Color, fg: Color) -> Styles {
+        Styles {
+            bg: Some(bg),
+            fg: Some(fg),
+            bold: None,
+        }
+    }
+
+    pub fn with_bold(bg: Color, fg: Color) -> Styles {
+        Styles {
+            bg: Some(bg),
+            fg: Some(fg),
+            bold: Some(true),
+        }
+    }
+}
+
+pub fn colorful_print(colors: Styles, content: String) -> Result<()> {
     disable_raw_input();
-    execute!(
-        stdout(),
-        SetForegroundColor(fg),
-        SetBackgroundColor(bg),
-        Print(content),
-        ResetColor
-    )
-    .expect("Failed to colorful print");
+
+    let mut o = stdout();
+    if let Some(bg) = colors.bg {
+        o.execute(SetBackgroundColor(bg))?;
+    }
+    if let Some(fg) = colors.fg {
+        o.execute(SetBackgroundColor(fg))?;
+    }
+    if colors.bold.is_some() {
+        o.execute(SetAttribute(Attribute::Bold))?;
+    }
+    o.execute(Print(content))?;
+    o.execute(ResetColor)?;
+    Ok(())
 }
 
 // TODO: refacor
@@ -67,12 +96,11 @@ fn hex_to_color(hex: &str) -> crossterm::style::Color {
     crossterm::style::Color::Rgb { r, g, b }
 }
 
-pub fn output_invalid_type() {
+pub fn output_invalid_type() -> Result<()> {
     colorful_print(
-        *PROMPT_BG_COLOR,
-        *PROMPT_ERR_FG_COLOR,
+        Styles::new(*PROMPT_BG_COLOR, *PROMPT_ERR_FG_COLOR),
         "Invalid input. Please try again.\n".to_string(),
-    );
+    )
 }
 
 pub fn report_error(msg: &str) {
@@ -87,14 +115,12 @@ pub fn report_success(msg: &str) {
 
 fn execute_command(command: &str) -> Result<Output> {
     colorful_print(
-        *PROMPT_BG_COLOR,
-        *PROMPT_NOTICE_FG_COLOR,
+        Styles::new(*PROMPT_BG_COLOR, *PROMPT_NOTICE_FG_COLOR),
         "\nExecuting:".to_string(),
-    );
+    )?;
     colorful_print(
-        *PROMPT_BG_COLOR,
-        *COMMAND_FG_COLOR,
+        Styles::new(*PROMPT_BG_COLOR, *COMMAND_FG_COLOR),
         format!("\t{}", command).to_string(),
-    );
+    )?;
     exec(command)
 }

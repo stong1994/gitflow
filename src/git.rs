@@ -9,7 +9,7 @@ pub fn add_all() -> Result<()> {
         .arg("--all")
         .output()
         .context("git add failed")?;
-    output_success_result("\nAll files have been added."); // TODO:
+    output_success_result("\nAll files have been added.")?; // TODO:
     Ok(())
 }
 
