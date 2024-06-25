@@ -29,6 +29,15 @@ pub fn any_changes() -> Result<bool> {
     Ok(!output.stdout.is_empty())
 }
 
+pub fn git_status_short() -> Result<String> {
+    let output = Command::new("git")
+        .arg("status")
+        .arg("-s")
+        .output()
+        .context("git status failed")?;
+    Ok(String::from_utf8(output.stdout).context("Failed to convert output to string")?)
+}
+
 pub fn check_in_git_repo() -> Result<bool> {
     let output = Command::new("git")
         .arg("rev-parse")
