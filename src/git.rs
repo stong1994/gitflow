@@ -121,3 +121,17 @@ pub fn add_remote(name: String, url: String) -> Result<()> {
     }
     Ok(())
 }
+
+pub fn diff_remote_stat(remote: String, branch: String) -> Result<String> {
+    let output = Command::new("git")
+        .arg("diff")
+        .arg("--stat")
+        .arg(format!("{}/{}", remote, branch))
+        .output()
+        .context("Failed to execute git diff")?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        bail!("Failed to execute git diff: {}", stderr);
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).to_string())
+}
