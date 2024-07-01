@@ -135,6 +135,11 @@ fn clean() -> Result<()> {
                 desc: "Create a branch.".to_string(),
                 action: Box::new(create_branch),
             },
+            OptionItem {
+                key: 'P',
+                desc: "Push to remote".to_string(),
+                action: Box::new(push),
+            },
         ],
     }
     .execute()

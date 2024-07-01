@@ -113,7 +113,7 @@ pub fn get_branches(remote_name: Option<String>) -> Result<Vec<String>> {
                 .arg("branch")
                 .arg("-r")
                 .arg("--list")
-                .arg("--format='%(refname:short)'")
+                .arg("--format=%(refname:short)")
                 .output()
                 .context("Failed to execute git command")?;
             if !output.status.success() {
