@@ -42,7 +42,7 @@ impl GitStatus {
             for line in lines {
                 let (first, second) = (&line[0..1], &line[1..2]);
                 match first {
-                    "U" | "A" | "D" | "R" | "C" | "T" => staged = true,
+                    "M" | "A" | "D" | "R" | "C" | "T" => staged = true,
                     _ => {}
                 }
                 match second {

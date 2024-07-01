@@ -1,7 +1,7 @@
-use std::{collections::HashMap, process};
+use std::process;
 
 use crate::{
-    commands::{ai_generate_commit, exec, exec_commit},
+    commands::{ai_generate_commit, exec_commit},
     git,
     git_status::GitStatus,
     input,
@@ -33,12 +33,24 @@ fn confirm_commit(commit_command: String) -> Result<()> {
         prompt: "Conform the commit message.",
         options: vec![
             OptionItem {
-                key: 'y',
+                key: 'Y',
                 desc: "Execute!!!".to_string(),
-                action: Box::new(|| exec_commit(&commit_command.clone())),
+                action: Box::new(|| {
+                    exec_commit(&commit_command.clone()).and_then(|()| {
+                        Options {
+                            prompt: "Do you need push?",
+                            options: vec![OptionItem {
+                                key: 'Y',
+                                desc: "Yes, push it!.".to_string(),
+                                action: Box::new(push),
+                            }],
+                        }
+                        .execute()
+                    })
+                }),
             },
             OptionItem {
-                key: 'r',
+                key: 'R',
                 desc: "Regenerate commit message.".to_string(),
                 action: Box::new(commit),
             },
@@ -96,7 +108,7 @@ fn uninitialized() -> Result<()> {
     Options {
         prompt: "Not in a git repository, do you wanna initialize git repo?",
         options: vec![OptionItem {
-            key: 'y',
+            key: 'Y',
             desc: "Yes, initialize.".to_string(),
             action: Box::new(git::init),
         }],
@@ -238,10 +250,13 @@ fn choose_remote(remotes: Vec<String>) -> Result<String> {
         options: remotes
             .into_iter()
             .enumerate()
-            .map(|(idx, remote_name)| OptionItem {
-                key: std::char::from_u32(idx as u32).unwrap(),
-                desc: remote_name.clone(),
-                action: Box::new(move || Ok(remote_name.clone())),
+            .map(|(idx, remote_name)| {
+                let idx = idx + 1;
+                OptionItem {
+                    key: std::char::from_u32(idx as u32).unwrap(),
+                    desc: remote_name.clone(),
+                    action: Box::new(move || Ok(remote_name.clone())),
+                }
             })
             .collect(),
     }
@@ -449,7 +464,7 @@ fn conflicted() -> Result<()> {
                 key: 'N',
                 desc: "No, I haven't resolved.".to_string(),
                 action: Box::new(|| {
-                    output_error("Please resolve the conflict first.");
+                    output_error("Please resolve the conflict first.")?;
                     process::exit(1);
                 }),
             },
