@@ -1,11 +1,12 @@
 use crate::input::disable_raw_input;
-use anyhow::Result;
+use anyhow::{bail, Result};
 use crossterm::style::{
     Attribute, Color, Print, ResetColor, SetAttribute, SetBackgroundColor, SetForegroundColor,
 };
 use crossterm::ExecutableCommand;
 use lazy_static::lazy_static;
 use std::io::stdout;
+use std::process::Output;
 
 lazy_static! {
     pub static ref PROMPT_BG_COLOR: Color = hex_to_color("#222831");
@@ -109,4 +110,27 @@ pub fn output_notice(notice: &str) -> Result<()> {
         Styles::new(*PROMPT_BG_COLOR, *PROMPT_NOTICE_FG_COLOR),
         format!("\n{}", notice).to_string(),
     )
+}
+
+pub fn command_output(command: Option<&str>, output: Output) -> Result<()> {
+    if let Some(command) = command {
+        colorful_print(
+            Styles::new(*PROMPT_BG_COLOR, *COMMAND_FG_COLOR),
+            format!("\n==> Executing command: {}\n", command),
+        )?;
+    }
+    if output.status.success() {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        colorful_print(
+            Styles::new(*PROMPT_BG_COLOR, *PROMPT_NOTICE_FG_COLOR),
+            "\nCommand executed successfully. Output:\n".to_string(),
+        )?;
+        colorful_print(
+            Styles::new(*PROMPT_BG_COLOR, *OUTTER_OUTPUT_FG_COLOR),
+            stdout.to_string(),
+        )
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        bail!("Command execution failed: {}.", stderr);
+    }
 }

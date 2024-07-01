@@ -176,19 +176,7 @@ fn merge_local_branch() -> Result<()> {
                     OptionItem {
                         key: std::char::from_u32(idx as u32).unwrap(),
                         desc: branch_name.clone(),
-                        action: Box::new(move || {
-                            let output = git::merge(&branch_name)?;
-                            if output.status.success() {
-                                output_notice("Merge success.");
-                                Ok(())
-                            } else {
-                                output_error(&format!(
-                                    "Merge failed: {}",
-                                    String::from_utf8_lossy(&output.stderr)
-                                ));
-                                process::exit(1)
-                            }
-                        }),
+                        action: Box::new(move || git::merge(&branch_name)),
                     }
                 })
                 .collect(),
@@ -198,18 +186,8 @@ fn merge_local_branch() -> Result<()> {
 }
 
 fn merge_remote_branch() -> Result<()> {
-    let output = select_remote_branch()
-        .and_then(|(remote, branch)| git::merge(&format!("{}/{}", remote, branch)))?;
-    if output.status.success() {
-        output_notice("Merge success.");
-        Ok(())
-    } else {
-        output_error(&format!(
-            "Merge failed: {}",
-            String::from_utf8_lossy(&output.stderr)
-        ));
-        process::exit(1)
-    }
+    select_remote_branch()
+        .and_then(|(remote, branch)| git::merge(&format!("{}/{}", remote, branch)))
 }
 
 fn add() -> Result<()> {
