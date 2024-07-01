@@ -234,7 +234,7 @@ fn choose_branch(branches: Vec<String>) -> Result<String> {
             .map(|(idx, branch_name)| {
                 let branch_name = branch_name.clone();
                 OptionItem {
-                    key: std::char::from_u32(idx as u32).unwrap(),
+                    key: to_char(idx),
                     desc: branch_name.clone(),
                     action: Box::new(move || Ok(branch_name.clone())),
                 }
@@ -250,14 +250,10 @@ fn choose_remote(remotes: Vec<String>) -> Result<String> {
         options: remotes
             .into_iter()
             .enumerate()
-            .map(|(idx, remote_name)| {
-                println!("got idx: {}", idx.to_string());
-                let idx = idx + 1;
-                OptionItem {
-                    key: std::char::from_u32(idx as u32).unwrap(),
-                    desc: remote_name.clone(),
-                    action: Box::new(move || Ok(remote_name.clone())),
-                }
+            .map(|(idx, remote_name)| OptionItem {
+                key: to_char(idx),
+                desc: remote_name.clone(),
+                action: Box::new(move || Ok(remote_name.clone())),
             })
             .collect(),
     }
@@ -472,4 +468,9 @@ fn conflicted() -> Result<()> {
         ],
     }
     .execute()
+}
+
+fn to_char(n: usize) -> char {
+    let n = n + 1;
+    std::char::from_u32(n as u32 + '0' as u32).unwrap()
 }
