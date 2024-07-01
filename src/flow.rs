@@ -418,17 +418,7 @@ fn fully_committed() -> Result<()> {
 }
 
 fn push() -> Result<()> {
-    Options {
-        prompt: "Confirm to push?",
-        options: vec![OptionItem {
-            key: 'Y',
-            desc: "Yes, push.".to_string(),
-            action: Box::new(|| {
-                select_remote_branch().and_then(|(remote, branch)| git::push(&remote, &branch))
-            }),
-        }],
-    }
-    .execute()
+    select_remote_branch().and_then(|(remote, branch)| git::push(&remote, &branch))
 }
 
 fn conflicted() -> Result<()> {
