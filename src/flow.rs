@@ -12,6 +12,8 @@ use anyhow::Result;
 
 pub fn run() -> Result<()> {
     loop {
+        output_notice("Checking git status...")?;
+
         let status = GitStatus::of(None).unwrap();
         match status {
             GitStatus::Uninitialized => uninitialized()?,
