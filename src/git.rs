@@ -120,6 +120,10 @@ pub fn get_branches(remote_name: Option<String>) -> Result<Vec<String>> {
                 let stderr = String::from_utf8_lossy(&output.stderr);
                 bail!("Failed to get branches: {}", stderr);
             }
+            println!(
+                "hhhhhhhhhhhhhhh{:?}",
+                String::from_utf8_lossy(&output.stdout)
+            );
             let branches = String::from_utf8_lossy(&output.stdout)
                 .lines()
                 .filter(|line| line.starts_with(&remote_name))
