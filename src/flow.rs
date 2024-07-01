@@ -251,6 +251,7 @@ fn choose_remote(remotes: Vec<String>) -> Result<String> {
             .into_iter()
             .enumerate()
             .map(|(idx, remote_name)| {
+                println!("got idx: {}", idx.to_string());
                 let idx = idx + 1;
                 OptionItem {
                     key: std::char::from_u32(idx as u32).unwrap(),
