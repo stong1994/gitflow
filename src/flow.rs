@@ -1,41 +1,31 @@
 use std::{collections::HashMap, process};
 
-use anyhow::Result;
-use crossterm::event::{read, Event, KeyCode};
-use gitflow::{
+use crate::{
+    commands::{ai_generate_commit, exec, exec_commit},
     git,
     git_status::GitStatus,
-    input::{self, disable_raw_input, enable_raw_input},
+    input,
+    options::{OptionItem, Options},
     output::{output_error, output_notice},
 };
+use anyhow::Result;
 
-fn run() -> Result<()> {
+pub fn run() -> Result<()> {
     loop {
         let status = GitStatus::of(None).unwrap();
         match status {
             GitStatus::Uninitialized => uninitialized()?,
-            GitStatus::Clean => {
-                commit();
-            }
+            GitStatus::Clean => clean()?,
             GitStatus::Unstaged => unstaged()?,
-            _ => {
-                output_notice("Not implemented yet.");
-                process::exit(0);
-            }
+            GitStatus::PartiallyStaged => partially_staged()?,
+            GitStatus::FullyStaged => fully_staged()?,
+            GitStatus::PartiallyCommited => partially_committed()?,
+            GitStatus::MessPartiallyCommited => mess_partially_committed()?,
+            GitStatus::MessFullyCommited => mess_fully_committed()?,
+            GitStatus::FullyCommited => fully_committed()?,
+            GitStatus::Conflicted => conflicted()?,
         }
     }
-}
-
-fn main() {
-    run().unwrap();
-}
-
-fn ai_generate_commit() -> Result<String> {
-    Ok("hi , this is a commit".to_string())
-}
-
-fn input_commit() -> Result<String> {
-    Ok("hi, this is a input commit".to_string())
 }
 
 fn confirm_commit(commit_command: String) -> Result<()> {
@@ -45,7 +35,7 @@ fn confirm_commit(commit_command: String) -> Result<()> {
             OptionItem {
                 key: 'y',
                 desc: "Execute!!!".to_string(),
-                action: Box::new(|| command(commit_command.clone())),
+                action: Box::new(|| exec_commit(&commit_command.clone())),
             },
             OptionItem {
                 key: 'r',
@@ -57,72 +47,25 @@ fn confirm_commit(commit_command: String) -> Result<()> {
     .execute()
 }
 
-fn command(command: String) -> Result<()> {
-    println!("execute: {}", command);
-    Ok(())
-}
-
 fn commit() -> Result<()> {
     Options {
         prompt: "Choose a way to commit.",
         options: vec![
             OptionItem {
-                key: 'y',
+                key: 'A',
                 desc: "AI generate commit message.".to_string(),
                 action: Box::new(|| ai_generate_commit().and_then(confirm_commit)),
             },
             OptionItem {
-                key: 'n',
+                key: 'I',
                 desc: "Input commit message.".to_string(),
-                action: Box::new(|| input_commit().and_then(confirm_commit)),
+                action: Box::new(|| {
+                    input::read_line("Inpput commit command").and_then(confirm_commit)
+                }),
             },
         ],
     }
     .execute()
-}
-
-struct OptionItem<'a, T> {
-    key: char,
-    desc: String,
-    action: Box<dyn Fn() -> Result<T> + 'a>,
-}
-struct Options<'a, T> {
-    prompt: &'a str,
-    options: Vec<OptionItem<'a, T>>,
-}
-
-impl<'a, T> Options<'a, T> {
-    pub fn execute(&self) -> Result<T> {
-        println!("{}", self.prompt);
-        let ops_map: HashMap<_, _> = self
-            .options
-            .iter()
-            .map(|option| {
-                println!("\n\t{}: {}", option.key, option.desc);
-                option
-            })
-            .map(|option| (option.key, &option.action))
-            .collect();
-        loop {
-            enable_raw_input().unwrap();
-            if let Ok(Event::Key(event)) = read() {
-                if let KeyCode::Char(c) = event.code {
-                    if c == 'q' {
-                        process::exit(0);
-                    }
-                    let option = ops_map.get(&c);
-                    match option {
-                        Some(option) => {
-                            return option();
-                        }
-                        None => {
-                            output_notice("Invalid option.");
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 fn unstaged() -> Result<()> {
@@ -130,17 +73,17 @@ fn unstaged() -> Result<()> {
         prompt: "Files unstaged.",
         options: vec![
             OptionItem {
-                key: 'a',
+                key: 'A',
                 desc: "Add all files.".to_string(),
                 action: Box::new(add),
             },
             OptionItem {
-                key: 'c',
+                key: 'O',
                 desc: "Checkout a branch.".to_string(),
                 action: Box::new(checkout_branch),
             },
             OptionItem {
-                key: 'b',
+                key: 'B',
                 desc: "Create a branch.".to_string(),
                 action: Box::new(create_branch),
             },
@@ -165,13 +108,24 @@ fn clean() -> Result<()> {
     Options {
         prompt: "Nothing to commit, working tree clean. Maybe you wanna:",
         options: vec![
-            OptionItem{
+            OptionItem {
                 key: 'M',
                 desc: "Merge another branch".to_string(),
-                action:
-            }
+                action: Box::new(merge),
+            },
+            OptionItem {
+                key: 'C',
+                desc: "Checkout a branch.".to_string(),
+                action: Box::new(checkout_branch),
+            },
+            OptionItem {
+                key: 'B',
+                desc: "Create a branch.".to_string(),
+                action: Box::new(create_branch),
+            },
         ],
     }
+    .execute()
 }
 
 fn merge() -> Result<()> {
@@ -179,12 +133,12 @@ fn merge() -> Result<()> {
         prompt: "Merge local branch or remote branch",
         options: vec![
             OptionItem {
-                key: 'l',
+                key: 'L',
                 desc: "Merge local branch".to_string(),
                 action: Box::new(merge_local_branch),
             },
             OptionItem {
-                key: 'r',
+                key: 'R',
                 desc: "Merge remote branch".to_string(),
                 action: Box::new(merge_remote_branch),
             },
@@ -227,37 +181,20 @@ fn merge_local_branch() -> Result<()> {
 }
 
 fn merge_remote_branch() -> Result<()> {
-    git::get_branches(None).and_then(|branches| {
-        Options {
-            prompt: "Please choose a branch.",
-            options: branches
-                .into_iter()
-                .enumerate()
-                .map(|(idx, branch_name)| {
-                    let branch_name = branch_name.clone();
-                    OptionItem {
-                        key: std::char::from_u32(idx as u32).unwrap(),
-                        desc: branch_name.clone(),
-                        action: Box::new(move || {
-                            let output = git::merge(&branch_name)?;
-                            if output.status.success() {
-                                output_notice("Merge success.");
-                                Ok(())
-                            } else {
-                                output_error(&format!(
-                                    "Merge failed: {}",
-                                    String::from_utf8_lossy(&output.stderr)
-                                ));
-                                process::exit(1)
-                            }
-                        }),
-                    }
-                })
-                .collect(),
-        }
-        .execute()
-    })
+    let output = select_remote_branch()
+        .and_then(|(remote, branch)| git::merge(&format!("{}/{}", remote, branch)))?;
+    if output.status.success() {
+        output_notice("Merge success.");
+        Ok(())
+    } else {
+        output_error(&format!(
+            "Merge failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+        process::exit(1)
+    }
 }
+
 fn add() -> Result<()> {
     Options {
         prompt: "Confirm to add all?",
@@ -326,6 +263,9 @@ fn select_remote_branch() -> Result<(String, String)> {
                 action: Box::new(|| {
                     add_remote().and_then(|remote| {
                         git::fetch(&remote)?;
+                        let branch =
+                            git::get_branches(Some(remote.clone())).and_then(choose_branch)?;
+                        Ok((remote, branch))
                     })
                 }),
             }],
@@ -351,4 +291,169 @@ fn add_remote() -> Result<String> {
         git::add_remote(&name, &url)?;
         Ok(name)
     })
+}
+
+fn partially_staged() -> Result<()> {
+    Options {
+        prompt: "Files are partially staged, you can choose:",
+        options: vec![
+            OptionItem {
+                key: 'A',
+                desc: "Add files.".to_string(),
+                action: Box::new(add),
+            },
+            OptionItem {
+                key: 'C',
+                desc: "Commit files".to_string(),
+                action: Box::new(commit),
+            },
+        ],
+    }
+    .execute()
+}
+
+fn fully_staged() -> Result<()> {
+    Options {
+        prompt: "Files are fully staged, you can choose:",
+        options: vec![
+            OptionItem {
+                key: 'C',
+                desc: "Commit files".to_string(),
+                action: Box::new(commit),
+            },
+            OptionItem {
+                key: 'O',
+                desc: "Checkout".to_string(),
+                action: Box::new(checkout_branch),
+            },
+            OptionItem {
+                key: 'M',
+                desc: "Merge".to_string(),
+                action: Box::new(merge),
+            },
+            OptionItem {
+                key: 'B',
+                desc: "Create a branch.".to_string(),
+                action: Box::new(create_branch),
+            },
+        ],
+    }
+    .execute()
+}
+
+fn partially_committed() -> Result<()> {
+    Options {
+        prompt: "Files are partially committed, you can choose:",
+        options: vec![
+            OptionItem {
+                key: 'A',
+                desc: "Add files.".to_string(),
+                action: Box::new(add),
+            },
+            OptionItem {
+                key: 'O',
+                desc: "Checkout".to_string(),
+                action: Box::new(checkout_branch),
+            },
+        ],
+    }
+    .execute()
+}
+
+fn mess_partially_committed() -> Result<()> {
+    Options {
+        prompt: "Files are partially committed, you can choose:",
+        options: vec![
+            OptionItem {
+                key: 'C',
+                desc: "Commit files.".to_string(),
+                action: Box::new(commit),
+            },
+            OptionItem {
+                key: 'O',
+                desc: "Checkout".to_string(),
+                action: Box::new(checkout_branch),
+            },
+        ],
+    }
+    .execute()
+}
+
+fn mess_fully_committed() -> Result<()> {
+    Options {
+        prompt: "Files are partially committed and paritially added, you can choose:",
+        options: vec![
+            OptionItem {
+                key: 'C',
+                desc: "Commit files.".to_string(),
+                action: Box::new(commit),
+            },
+            OptionItem {
+                key: 'O',
+                desc: "Checkout".to_string(),
+                action: Box::new(checkout_branch),
+            },
+        ],
+    }
+    .execute()
+}
+
+fn fully_committed() -> Result<()> {
+    Options {
+        prompt: "Files are all committed, you can chose:",
+        options: vec![
+            OptionItem {
+                key: 'M',
+                desc: "Merge.".to_string(),
+                action: Box::new(merge),
+            },
+            OptionItem {
+                key: 'O',
+                desc: "Checkout".to_string(),
+                action: Box::new(checkout_branch),
+            },
+            OptionItem {
+                key: 'P',
+                desc: "Push to remote".to_string(),
+                action: Box::new(push),
+            },
+        ],
+    }
+    .execute()
+}
+
+fn push() -> Result<()> {
+    Options {
+        prompt: "Confirm to push?",
+        options: vec![OptionItem {
+            key: 'Y',
+            desc: "Yes, push.".to_string(),
+            action: Box::new(|| {
+                select_remote_branch().and_then(|(remote, branch)| git::push(&remote, &branch))
+            }),
+        }],
+    }
+    .execute()
+}
+
+fn conflicted() -> Result<()> {
+    Options {
+        prompt: "Files are identified conflicted, confirm you have resolved:",
+        options: vec![
+            OptionItem {
+                key: 'Y',
+                desc: "Yes, I have resolved.".to_string(),
+                action: Box::new(git::add_all),
+            },
+            OptionItem {
+                key: 'N',
+                desc: "No, I haven't resolved.".to_string(),
+                action: Box::new(|| {
+                    output_error("Please resolve the conflict first.");
+                    process::exit(1);
+                }),
+            },
+        ],
+    }
+    .execute()
 }

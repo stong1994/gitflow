@@ -2,21 +2,21 @@ use anyhow::{bail, Result};
 
 use crate::git::{check_in_git_repo, diff_remote_stat, git_status_short};
 
-struct GitRemoteBranch {
+pub struct GitRemoteBranch {
     remote: String,
     branch: String,
 }
 
-enum GitStatus {
+pub enum GitStatus {
     Uninitialized,
     // Initialized,
     Clean,
     Unstaged,
     PartiallyStaged,
     FullyStaged,
-    CleanParitiallyCommited,
-    DirtyPartiallyCommited,
-    DirtyFullCommited,
+    PartiallyCommited,
+    MessPartiallyCommited,
+    MessFullyCommited,
     FullyCommited,
 
     Conflicted,
@@ -40,13 +40,18 @@ impl GitStatus {
             let mut has_commit_to_push = false;
 
             for line in lines {
-                let status_code = &line[0..2];
-                match status_code {
-                    "A " | "M " | "D " | "R " | "C " | "T " => staged = true,
-                    " M" | " D" | "??" | " T" | " R" | " C" | "!!" | "DD" | "AU" | "UD" | "UA"
-                    | "DU" => unstaged = true,
-                    "UU" | "AA" => need_resolve = true,
-                    _ => bail!("Unrecognized git status: {}", status_code),
+                let (first, second) = (&line[0..1], &line[1..2]);
+                match first {
+                    "U" | "A" | "D" | "R" | "C" | "T" => staged = true,
+                    _ => {}
+                }
+                match second {
+                    "M" | "D" | "?" | "T" | "R" | "C" | "!" => unstaged = true,
+                    _ => {}
+                }
+                match (first, second) {
+                    ("U", "U") | ("A", "A") => need_resolve = true,
+                    _ => {}
                 }
             }
 
@@ -64,9 +69,9 @@ impl GitStatus {
                     (false, true, false) => Ok(Self::FullyStaged),
                     (false, true, true) => Ok(Self::PartiallyStaged),
                     (true, false, false) => Ok(Self::FullyCommited),
-                    (true, false, true) => Ok(Self::CleanParitiallyCommited),
-                    (true, true, false) => Ok(Self::DirtyFullCommited),
-                    (true, true, true) => Ok(Self::DirtyPartiallyCommited),
+                    (true, false, true) => Ok(Self::PartiallyCommited),
+                    (true, true, false) => Ok(Self::MessFullyCommited),
+                    (true, true, true) => Ok(Self::MessPartiallyCommited),
                 }
             }
         }

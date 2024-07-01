@@ -1,8 +1,5 @@
-use gitflow::status::Status;
+use gitflow::flow;
 
 fn main() {
-    let mut status = Status::Begin;
-    loop {
-        status = status.call()
-    }
+    flow::run().unwrap();
 }

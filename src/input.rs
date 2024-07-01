@@ -23,3 +23,13 @@ pub fn read_line(notice: &str) -> Result<String> {
         .context("Failed to read line")?;
     Ok(input)
 }
+
+pub fn read_line_simple() -> Result<String> {
+    disable_raw_input()?;
+
+    let mut input = String::new();
+    io::stdin()
+        .read_line(&mut input)
+        .context("Failed to read line")?;
+    Ok(input)
+}
