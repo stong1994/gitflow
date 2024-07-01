@@ -216,7 +216,7 @@ fn add() -> Result<()> {
     Options {
         prompt: "Confirm to add all?",
         options: vec![OptionItem {
-            key: 'y',
+            key: 'Y',
             desc: "Yes, add all!".to_string(),
             action: Box::new(git::add_all),
         }],
