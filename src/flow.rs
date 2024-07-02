@@ -3,7 +3,7 @@ use std::process;
 use crate::{
     commands::{ai_generate_commit, exec_commit},
     git::{self, check_in_git_repo, get_remote_names},
-    git_status::GitStatus,
+    git_status::{GitRemoteBranch, GitStatus},
     input,
     options::{OptionItem, Options},
     output::{output_error, output_notice},
@@ -14,11 +14,15 @@ pub fn run() -> Result<()> {
     if !check_in_git_repo()? {
         uninitialized()?;
     }
-    let remotes = select_remote_branch()?;
+    let remote_info = select_remote_branch()?;
     loop {
         output_notice("Checking git status...")?;
 
-        let status = GitStatus::of(None).unwrap();
+        let status = GitStatus::of(Some(GitRemoteBranch {
+            remote: remote_info.0.clone(),
+            branch: remote_info.1.clone(),
+        }))
+        .unwrap();
         match status {
             GitStatus::Clean => clean()?,
             GitStatus::Unstaged => unstaged()?,
@@ -449,6 +453,7 @@ fn fully_committed() -> Result<()> {
 }
 
 fn push() -> Result<()> {
+    output_notice("\nPushing, please wait a moment...\n")?;
     select_remote_branch().and_then(|(remote, branch)| git::push(&remote, &branch))
 }
 

@@ -3,8 +3,8 @@ use anyhow::{bail, Result};
 use crate::git::{diff_remote_stat, git_status_short};
 
 pub struct GitRemoteBranch {
-    remote: String,
-    branch: String,
+    pub remote: String,
+    pub branch: String,
 }
 
 pub enum GitStatus {
