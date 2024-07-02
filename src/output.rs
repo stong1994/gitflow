@@ -13,6 +13,7 @@ lazy_static! {
     pub static ref CODE_BG_COLOR: Color = hex_to_color("#F9E8C9");
     pub static ref CODE_BORDER_FG_COLOR: Color = hex_to_color("#898121");
     pub static ref CODE_FG_COLOR: Color = hex_to_color("#0A6847");
+    pub static ref COMMAND_NOTICE_FG_COLOR: Color = hex_to_color("#009FBD");
     pub static ref COMMAND_FG_COLOR: Color = hex_to_color("#ACD793");
     pub static ref PROMPT_FG_COLOR: Color = hex_to_color("#ECB159");
     pub static ref PROMPT_OPTIONI_KEY_FG_COLOR: Color = hex_to_color("#CBFFA9");
@@ -115,10 +116,15 @@ pub fn output_notice(notice: &str) -> Result<()> {
 pub fn command_output(command: Option<&str>, output: Output) -> Result<()> {
     if let Some(command) = command {
         colorful_print(
+            Styles::new(*PROMPT_BG_COLOR, *COMMAND_NOTICE_FG_COLOR),
+            "\n==> Executing: ".to_string(),
+        )?;
+        colorful_print(
             Styles::new(*PROMPT_BG_COLOR, *COMMAND_FG_COLOR),
-            format!("\n==> Executing command: {}\n", command),
+            format!("{}\n", command),
         )?;
     }
+
     if output.status.success() {
         let stdout = String::from_utf8_lossy(&output.stdout);
         colorful_print(

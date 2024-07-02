@@ -39,7 +39,7 @@ pub fn run() -> Result<()> {
 
 fn confirm_commit(commit_command: String) -> Result<()> {
     Options {
-        prompt: "Conform the commit message.",
+        prompt: "Confirm the commit message.",
         options: vec![
             OptionItem {
                 key: 'Y',
@@ -453,8 +453,10 @@ fn fully_committed() -> Result<()> {
 }
 
 fn push() -> Result<()> {
-    output_notice("\nPushing, please wait a moment...\n")?;
-    select_remote_branch().and_then(|(remote, branch)| git::push(&remote, &branch))
+    select_remote_branch().and_then(|(remote, branch)| {
+        output_notice("\nPushing, please wait a moment...\n")?;
+        git::push(&remote, &branch)
+    })
 }
 
 fn conflicted() -> Result<()> {
