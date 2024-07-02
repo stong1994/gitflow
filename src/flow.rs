@@ -2,7 +2,7 @@ use std::process;
 
 use crate::{
     commands::{ai_generate_commit, exec_commit},
-    git,
+    git::{self, check_in_git_repo, get_remote_names},
     git_status::GitStatus,
     input,
     options::{OptionItem, Options},
@@ -11,12 +11,15 @@ use crate::{
 use anyhow::Result;
 
 pub fn run() -> Result<()> {
+    if !check_in_git_repo()? {
+        uninitialized()?;
+    }
+    let remotes = select_remote_branch()?;
     loop {
         output_notice("Checking git status...")?;
 
         let status = GitStatus::of(None).unwrap();
         match status {
-            GitStatus::Uninitialized => uninitialized()?,
             GitStatus::Clean => clean()?,
             GitStatus::Unstaged => unstaged()?,
             GitStatus::PartiallyStaged => partially_staged()?,
@@ -36,7 +39,7 @@ fn confirm_commit(commit_command: String) -> Result<()> {
         options: vec![
             OptionItem {
                 key: 'Y',
-                desc: "Execute!!!".to_string(),
+                desc: "Yes, execute it!!!".to_string(),
                 action: Box::new(|| {
                     exec_commit(&commit_command.clone()).and_then(|()| {
                         Options {
@@ -206,27 +209,39 @@ fn add() -> Result<()> {
 
 fn checkout_branch() -> Result<()> {
     git::get_branches(None)
-        .and_then(|branches| choose_branch(branches))
+        .and_then(choose_branch)
         .and_then(|branch| git::checkout(&branch))
 }
 
 fn choose_branch(branches: Vec<String>) -> Result<String> {
-    Options {
-        prompt: "Please choose a branch.",
-        options: branches
-            .into_iter()
-            .enumerate()
-            .map(|(idx, branch_name)| {
-                let branch_name = branch_name.clone();
-                OptionItem {
-                    key: to_char(idx),
-                    desc: branch_name.clone(),
-                    action: Box::new(move || Ok(branch_name.clone())),
-                }
-            })
-            .collect(),
+    if branches.len() == 1 {
+        Options {
+            prompt: &format!("Only one branch found:{}", branches[0]),
+            options: vec![OptionItem {
+                key: 'Y',
+                desc: "Yes, use this branch.".to_string(),
+                action: Box::new(|| Ok(branches[0].clone())),
+            }],
+        }
+        .execute()
+    } else {
+        Options {
+            prompt: "Please choose a branch.",
+            options: branches
+                .into_iter()
+                .enumerate()
+                .map(|(idx, branch_name)| {
+                    let branch_name = branch_name.clone();
+                    OptionItem {
+                        key: index_to_char(idx),
+                        desc: branch_name.clone(),
+                        action: Box::new(move || Ok(branch_name.clone())),
+                    }
+                })
+                .collect(),
+        }
+        .execute()
     }
-    .execute()
 }
 
 fn choose_remote(remotes: Vec<String>) -> Result<String> {
@@ -236,7 +251,7 @@ fn choose_remote(remotes: Vec<String>) -> Result<String> {
             .into_iter()
             .enumerate()
             .map(|(idx, remote_name)| OptionItem {
-                key: to_char(idx),
+                key: index_to_char(idx),
                 desc: remote_name.clone(),
                 action: Box::new(move || Ok(remote_name.clone())),
             })
@@ -264,6 +279,20 @@ fn select_remote_branch() -> Result<(String, String)> {
                             git::get_branches(Some(remote.clone())).and_then(choose_branch)?;
                         Ok((remote, branch))
                     })
+                }),
+            }],
+        }
+        .execute()
+    } else if remotes.len() == 1 {
+        Options {
+            prompt: &format!("Only one remote found: {}", remotes[0]),
+            options: vec![OptionItem {
+                key: 'Y',
+                desc: "Yea, use this".to_string(),
+                action: Box::new(|| {
+                    let branch =
+                        git::get_branches(remotes.first().cloned()).and_then(choose_branch)?;
+                    Ok((remotes[0].clone(), branch))
                 }),
             }],
         }
@@ -445,7 +474,6 @@ fn conflicted() -> Result<()> {
     .execute()
 }
 
-fn to_char(n: usize) -> char {
-    let n = n + 1;
-    std::char::from_u32(n as u32 + '0' as u32).unwrap()
+fn index_to_char(n: usize) -> char {
+    std::char::from_u32((n + 1) as u32 + '0' as u32).unwrap()
 }

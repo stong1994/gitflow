@@ -1,6 +1,6 @@
 use anyhow::{bail, Result};
 
-use crate::git::{check_in_git_repo, diff_remote_stat, git_status_short};
+use crate::git::{diff_remote_stat, git_status_short};
 
 pub struct GitRemoteBranch {
     remote: String,
@@ -8,7 +8,7 @@ pub struct GitRemoteBranch {
 }
 
 pub enum GitStatus {
-    Uninitialized,
+    // Uninitialized,
     // Initialized,
     Clean,
     Unstaged,
@@ -24,9 +24,6 @@ pub enum GitStatus {
 
 impl GitStatus {
     pub fn of(remote_branch: Option<GitRemoteBranch>) -> Result<Self> {
-        if !check_in_git_repo()? {
-            return Ok(Self::Uninitialized);
-        }
         let output = git_status_short()?; // Assume this function runs `git status -s` and returns the output
 
         if output.is_empty() {
