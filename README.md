@@ -31,6 +31,8 @@ The tool identifies the following statuses:
 
 ## Flows
 
+Flow shows what user should do based on the status.
+
 ![flow1](pictures/flow1.png)
 ![flow2](pictures/flow2.png)
 ![flow3](pictures/flow3.png)
