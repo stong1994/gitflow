@@ -144,11 +144,6 @@ fn clean() -> Result<()> {
                 desc: "Create a branch.".to_string(),
                 action: Box::new(create_branch),
             },
-            OptionItem {
-                key: 'P',
-                desc: "Push to remote".to_string(),
-                action: Box::new(push),
-            },
         ],
     }
     .execute()
@@ -220,7 +215,7 @@ fn checkout_branch() -> Result<()> {
 fn choose_branch(branches: Vec<String>) -> Result<String> {
     if branches.len() == 1 {
         Options {
-            prompt: &format!("Only one branch found:{}", branches[0]),
+            prompt: &format!("Only one branch found: {}", branches[0]),
             options: vec![OptionItem {
                 key: 'Y',
                 desc: "Yes, use this branch.".to_string(),
