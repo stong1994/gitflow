@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::Result;
 
 use crate::git::{diff_remote_stat, git_status_short};
 

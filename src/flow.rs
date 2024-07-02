@@ -2,11 +2,11 @@ use std::process;
 
 use crate::{
     commands::{ai_generate_commit, exec_commit},
-    git::{self, check_in_git_repo, get_remote_names},
-    git_status::{GitRemoteBranch, GitStatus},
+    git::{self, check_in_git_repo},
     input,
     options::{OptionItem, Options},
     output::{output_error, output_notice},
+    status::{GitRemoteBranch, GitStatus},
 };
 use anyhow::Result;
 

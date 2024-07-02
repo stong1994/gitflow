@@ -1,5 +1,5 @@
 use anyhow::{bail, Context, Result};
-use std::process::{Command, Output};
+use std::process::Command;
 
 use crate::output::command_output;
 
