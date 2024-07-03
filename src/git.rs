@@ -1,7 +1,7 @@
 use anyhow::{bail, Context, Result};
 use std::process::Command;
 
-use crate::output::command_output;
+use crate::{output::command_output, status::GitRemoteBranch};
 
 pub fn init() -> Result<()> {
     let output = Command::new("git")
@@ -85,6 +85,26 @@ pub fn get_upstream() -> Result<Option<String>> {
         }
         Err(_) => Ok(None),
     }
+}
+
+pub fn set_upstream(remote: &str, branch: &str) -> Result<()> {
+    let output = Command::new("git")
+        .arg("branch")
+        .arg("--set-upstream-to")
+        .arg(format!("{}/{}", remote, branch))
+        .output()
+        .context("Failed to set upstream")?;
+    command_output(
+        Some(&format!(
+            "git branch --set-upstream-to {}/{}",
+            remote, branch
+        )),
+        output.clone(),
+    )?;
+    if !output.status.success() {
+        bail!("Failed to set upstream");
+    }
+    Ok(())
 }
 
 pub fn get_remote_names() -> Result<Vec<String>> {
@@ -227,15 +247,26 @@ pub fn pull(branch_info: Option<(&str, &str)>) -> Result<()> {
     Ok(())
 }
 
-pub fn push(remote: &str, branch: &str) -> Result<()> {
-    let output = Command::new("git")
-        .arg("push")
-        .arg(remote)
-        .arg(branch)
-        .output()
-        .context("Failed to execute git push")?;
+pub fn push(remote: Option<GitRemoteBranch>) -> Result<()> {
+    let output = if let Some(remote) = remote.clone() {
+        Command::new("git")
+            .arg("push")
+            .arg(remote.remote)
+            .arg(remote.branch)
+            .output()
+    } else {
+        Command::new("git").arg("push").output()
+    }
+    .context("Failed to execute git push")?;
     command_output(
-        Some(&format!("git push {} {}", remote, branch)),
+        Some(&format!(
+            "git push {}",
+            if let Some(remote) = remote {
+                format!("{} {}", remote.remote, remote.branch)
+            } else {
+                "".to_string()
+            }
+        )),
         output.clone(),
     )?;
     if !output.status.success() {

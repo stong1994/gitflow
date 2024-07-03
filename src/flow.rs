@@ -2,7 +2,7 @@ use std::process;
 
 use crate::{
     commands::{ai_generate_commit, exec_commit},
-    git::{self, check_in_git_repo},
+    git::{self, check_in_git_repo, fetch},
     input,
     options::{OptionItem, Options},
     output::{output_error, output_notice},
@@ -14,15 +14,11 @@ pub fn run() -> Result<()> {
     if !check_in_git_repo()? {
         uninitialized()?;
     }
-    let remote_info = get_remote_branch()?;
+    let remote_info = get_upstream()?;
     loop {
         output_notice("Checking git status...")?;
 
-        let status = GitStatus::of(Some(GitRemoteBranch {
-            remote: remote_info.0.clone(),
-            branch: remote_info.1.clone(),
-        }))
-        .unwrap();
+        let status = GitStatus::of(remote_info.clone()).unwrap();
         match status {
             GitStatus::Clean => clean()?,
             GitStatus::Unstaged => unstaged()?,
@@ -297,7 +293,7 @@ fn create_branch() -> Result<()> {
         .and_then(|branch_name| git::create_checkout(&branch_name))
 }
 
-fn get_remote_branch() -> Result<(String, String)> {
+fn get_upstream() -> Result<Option<GitRemoteBranch>> {
     let upstream = git::get_upstream()?;
     if let Some(upstream) = upstream {
         Options {
@@ -308,27 +304,66 @@ fn get_remote_branch() -> Result<(String, String)> {
                     desc: "Yes, use upstream.".to_string(),
                     action: Box::new(|| {
                         let sp: Vec<_> = upstream.splitn(2, "/").collect();
-                        Ok((sp[0].to_string(), sp[1].to_string()))
+                        Ok(Some(GitRemoteBranch {
+                            remote: sp[0].to_string(),
+                            branch: sp[1].to_string(),
+                        }))
                     }),
                 },
                 OptionItem {
                     key: 'N',
                     desc: "No, use another remote.".to_string(),
-                    action: Box::new(select_remote_branch),
+                    action: Box::new(set_upstream),
                 },
             ],
         }
         .execute()
     } else {
-        let local_branch = git::get_current_branch()?;
-        let remotes = git::get_remote_names()?;
-        if remotes.len() == 1 {
-            let branches = git::get_branches(Some(remotes[0].clone()))?;
-            if branches.contains(&local_branch) {
-                return Ok((remotes[0].clone(), local_branch));
-            }
-        }
-        select_remote_branch()
+        set_upstream()
+    }
+}
+
+fn set_upstream() -> Result<Option<GitRemoteBranch>> {
+    let local_branch = git::get_current_branch()?;
+    let remotes = git::get_remote_names()?;
+    let remote = match remotes.len() {
+        0 => add_remote().and_then(|remote| {
+            fetch(&remote)?;
+            Ok(remote)
+        })?,
+        1 => remotes[0].clone(),
+        _ => choose_remote(remotes.clone())?,
+    };
+
+    let branches = git::get_branches(Some(remote.clone()))?;
+    if branches.contains(&local_branch) {
+        Options {
+                    prompt: &format!(
+                        "There is a remote branch that has the same name with local branch, do you wanna set upstream to it: {}/{}?",
+                        remote.clone(), &local_branch
+                    ),
+                    options: vec![
+                        OptionItem {
+                            key: 'Y',
+                            desc: "Yes, set upstream.".to_string(),
+                            action: Box::new(|| git::set_upstream(&remotes[0], &local_branch).map(|()| Some(GitRemoteBranch{
+                                remote: remotes[0].clone(),
+                                branch: local_branch.clone(),
+                            }))),
+                        },
+
+                        OptionItem {
+                            key: 'N',
+                            desc: "No, use another branch.".to_string(),
+                            action: Box::new(||choose_branch(branches.clone()).map(|branch| Some(GitRemoteBranch{
+                                remote: remote.clone(),
+                                branch: branch.clone(),
+                            }))),
+                        },
+                    ],
+                }.execute()
+    } else {
+        Ok(None)
     }
 }
 
@@ -522,10 +557,28 @@ fn fully_committed() -> Result<()> {
 }
 
 fn push() -> Result<()> {
-    get_remote_branch().and_then(|(remote, branch)| {
-        output_notice("\nPushing, please wait a moment...\n")?;
-        git::push(&remote, &branch)
-    })
+    let upstream = git::get_upstream()?;
+    let (remote, branch) = if let Some(upstream) = upstream {
+        let branch_info: Vec<_> = upstream.splitn(2, '/').collect();
+        Options {
+            prompt: &format!(
+                "There is an upstream: {}, do you wanna push to it?",
+                upstream
+            ),
+            options: vec![OptionItem {
+                key: 'Y',
+                desc: "Yes, push to upstream branch".to_string(),
+                action: Box::new(move || {
+                    Ok((branch_info[0].to_string(), branch_info[1].to_string()))
+                }),
+            }],
+        }
+        .execute()
+    } else {
+        select_remote_branch()
+    }?;
+    output_notice("\nPushing, please wait a moment...\n")?;
+    git::push(Some(GitRemoteBranch { remote, branch }))
 }
 
 fn conflicted() -> Result<()> {
