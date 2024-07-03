@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use crate::git::{diff_remote_stat, git_status_short};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct GitRemoteBranch {
     pub remote: String,
     pub branch: String,
