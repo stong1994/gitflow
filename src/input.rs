@@ -16,6 +16,7 @@ pub fn disable_raw_input() -> Result<()> {
 pub fn read_line(notice: &str) -> Result<String> {
     disable_raw_input()?;
     output_notice(notice)?;
+    output_notice("\n")?;
 
     let mut input = String::new();
     io::stdin()

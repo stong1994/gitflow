@@ -1,5 +1,5 @@
 use crate::input::disable_raw_input;
-use anyhow::{bail, Result};
+use anyhow::Result;
 use crossterm::style::{
     Attribute, Color, Print, ResetColor, SetAttribute, SetBackgroundColor, SetForegroundColor,
 };
