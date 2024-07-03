@@ -63,6 +63,30 @@ pub fn check_in_git_repo() -> Result<bool> {
     Ok(output.stdout == b"true\n")
 }
 
+pub fn get_upstream() -> Result<Option<String>> {
+    let output = Command::new("git")
+        .arg("rev-parse")
+        .arg("--abbrev-ref")
+        .arg("--symbolic-full-name")
+        .arg("@{upstream}")
+        .output()
+        .context("Failed to execute git command")?;
+    command_output(
+        Some("git rev-parse --abbrev-ref --symbolic-full-name @{upstream}"),
+        output.clone(),
+    )?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        bail!("Failed to get remote names: {}", stderr);
+    }
+    if output.stdout.is_empty() {
+        Ok(None)
+    } else {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        Ok(Some(stdout.trim().to_string()))
+    }
+}
+
 pub fn get_remote_names() -> Result<Vec<String>> {
     let output = Command::new("git")
         .arg("remote")
@@ -176,6 +200,33 @@ pub fn merge(branch: &str) -> Result<()> {
     Ok(())
 }
 
+pub fn pull(branch_info: Option<(&str, &str)>) -> Result<()> {
+    let output = match branch_info {
+        Some((remote, branch)) => Command::new("git")
+            .arg("pull")
+            .arg(remote)
+            .arg(branch)
+            .output(),
+        None => Command::new("git").arg("pull").output(),
+    }
+    .context("Failed to execute git pull")?;
+    command_output(
+        Some(&format!(
+            "git pull {}",
+            if let Some((remote, branch)) = branch_info {
+                format!("{} {}", remote, branch)
+            } else {
+                "".to_string()
+            }
+        )),
+        output.clone(),
+    )?;
+    if !output.status.success() {
+        bail!("Failed to pull");
+    }
+    Ok(())
+}
+
 pub fn push(remote: &str, branch: &str) -> Result<()> {
     let output = Command::new("git")
         .arg("push")
@@ -188,7 +239,7 @@ pub fn push(remote: &str, branch: &str) -> Result<()> {
         output.clone(),
     )?;
     if !output.status.success() {
-        bail!("Failed to checkout branch");
+        bail!("Failed to push");
     }
     Ok(())
 }

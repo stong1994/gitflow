@@ -168,6 +168,52 @@ fn merge() -> Result<()> {
     .execute()
 }
 
+fn pull() -> Result<()> {
+    let upstream = git::get_upstream()?;
+    if let Some(upstream) = upstream {
+        Options {
+            prompt: &format!(
+                "There is an upstream: {}, do you wanna pull from it?",
+                upstream
+            ),
+            options: vec![OptionItem {
+                key: 'Y',
+                desc: "Yes, pull from upstream branch".to_string(),
+                action: Box::new(|| git::pull(None)),
+            }],
+        }
+        .execute()
+    } else {
+        select_pull()
+    }
+}
+
+fn select_pull() -> Result<()> {
+    let remotes = git::get_remote_names()?;
+    if remotes.is_empty() {
+        output_notice("No remote found, need add one first")
+    } else if remotes.len() == 1 {
+        Options {
+            prompt: &format!("Only one remote found: {}", remotes[0]),
+            options: vec![OptionItem {
+                key: 'Y',
+                desc: "Yea, use this".to_string(),
+                action: Box::new(|| {
+                    let branch =
+                        git::get_branches(remotes.first().cloned()).and_then(choose_branch)?;
+                    git::pull(Some((&remotes[0], &branch)))
+                }),
+            }],
+        }
+        .execute()
+    } else {
+        choose_remote(remotes).and_then(|remote| {
+            let branch = git::get_branches(Some(remote.clone())).and_then(choose_branch)?;
+            git::pull(Some((&remote, &branch)))
+        })
+    }
+}
+
 fn merge_local_branch() -> Result<()> {
     git::get_branches(None).and_then(|branches| {
         Options {
@@ -431,6 +477,11 @@ fn fully_committed() -> Result<()> {
                 key: 'M',
                 desc: "Merge.".to_string(),
                 action: Box::new(merge),
+            },
+            OptionItem {
+                key: 'L',
+                desc: "Pull.".to_string(),
+                action: Box::new(pull),
             },
             OptionItem {
                 key: 'O',
