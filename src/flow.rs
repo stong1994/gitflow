@@ -44,19 +44,7 @@ fn confirm_commit(commit_command: String) -> Result<()> {
             OptionItem {
                 key: 'Y',
                 desc: "Yes, execute it!!!".to_string(),
-                action: Box::new(|| {
-                    exec_commit(&commit_command.clone()).and_then(|()| {
-                        Options {
-                            prompt: "Do you need push?",
-                            options: vec![OptionItem {
-                                key: 'Y',
-                                desc: "Yes, push it!.".to_string(),
-                                action: Box::new(push),
-                            }],
-                        }
-                        .execute()
-                    })
-                }),
+                action: Box::new(|| exec_commit(&commit_command.clone())),
             },
             OptionItem {
                 key: 'R',
