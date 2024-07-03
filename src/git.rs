@@ -114,8 +114,8 @@ pub fn get_branches(remote_name: Option<String>) -> Result<Vec<String>> {
             }
             let branches = String::from_utf8_lossy(&output.stdout)
                 .lines()
-                .filter(|line| line.starts_with(&remote_name))
-                .filter_map(|line| line.split('/').nth(1))
+                .filter(|line| line.starts_with(&format!("{}/", remote_name)))
+                .map(|line| line.trim_start_matches(&format!("{}/", remote_name)))
                 .map(|line| line.to_string())
                 .collect();
             Ok(branches)
