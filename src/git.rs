@@ -69,21 +69,21 @@ pub fn get_upstream() -> Result<Option<String>> {
         .arg("--abbrev-ref")
         .arg("--symbolic-full-name")
         .arg("@{upstream}")
-        .output()
-        .context("Failed to execute git command")?;
-    command_output(
-        Some("git rev-parse --abbrev-ref --symbolic-full-name @{upstream}"),
-        output.clone(),
-    )?;
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        bail!("Failed to get remote names: {}", stderr);
-    }
-    if output.stdout.is_empty() {
-        Ok(None)
-    } else {
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        Ok(Some(stdout.trim().to_string()))
+        .output();
+    match output {
+        Ok(output) => {
+            command_output(
+                Some("git rev-parse --abbrev-ref --symbolic-full-name @{upstream}"),
+                output.clone(),
+            )?;
+            if !output.status.success() {
+                Ok(None)
+            } else {
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                Ok(Some(stdout.trim().to_string()))
+            }
+        }
+        Err(_) => Ok(None),
     }
 }
 

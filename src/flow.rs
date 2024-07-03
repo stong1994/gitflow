@@ -14,7 +14,7 @@ pub fn run() -> Result<()> {
     if !check_in_git_repo()? {
         uninitialized()?;
     }
-    let remote_info = select_remote_branch()?;
+    let remote_info = get_remote_branch()?;
     loop {
         output_notice("Checking git status...")?;
 
@@ -297,6 +297,41 @@ fn create_branch() -> Result<()> {
         .and_then(|branch_name| git::create_checkout(&branch_name))
 }
 
+fn get_remote_branch() -> Result<(String, String)> {
+    let upstream = git::get_upstream()?;
+    if let Some(upstream) = upstream {
+        Options {
+            prompt: &format!("There is an upstream: {}, do you wanna use it?", upstream),
+            options: vec![
+                OptionItem {
+                    key: 'Y',
+                    desc: "Yes, use upstream.".to_string(),
+                    action: Box::new(|| {
+                        let sp: Vec<_> = upstream.splitn(2, "/").collect();
+                        Ok((sp[0].to_string(), sp[1].to_string()))
+                    }),
+                },
+                OptionItem {
+                    key: 'N',
+                    desc: "No, use another remote.".to_string(),
+                    action: Box::new(select_remote_branch),
+                },
+            ],
+        }
+        .execute()
+    } else {
+        let local_branch = git::get_current_branch()?;
+        let remotes = git::get_remote_names()?;
+        if remotes.len() == 1 {
+            let branches = git::get_branches(Some(remotes[0].clone()))?;
+            if branches.contains(&local_branch) {
+                return Ok((remotes[0].clone(), local_branch));
+            }
+        }
+        select_remote_branch()
+    }
+}
+
 fn select_remote_branch() -> Result<(String, String)> {
     let remotes = git::get_remote_names()?;
     if remotes.is_empty() {
@@ -487,7 +522,7 @@ fn fully_committed() -> Result<()> {
 }
 
 fn push() -> Result<()> {
-    select_remote_branch().and_then(|(remote, branch)| {
+    get_remote_branch().and_then(|(remote, branch)| {
         output_notice("\nPushing, please wait a moment...\n")?;
         git::push(&remote, &branch)
     })

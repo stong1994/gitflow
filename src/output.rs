@@ -137,6 +137,6 @@ pub fn command_output(command: Option<&str>, output: Output) -> Result<()> {
         )
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        bail!("Command execution failed: {}.", stderr);
+        output_error(&stderr)
     }
 }
