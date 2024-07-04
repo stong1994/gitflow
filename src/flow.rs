@@ -484,6 +484,11 @@ fn partially_committed() -> Result<()> {
                 desc: "Checkout".to_string(),
                 action: Box::new(checkout_branch),
             },
+            OptionItem {
+                key: 'P',
+                desc: "Push to remote".to_string(),
+                action: Box::new(push),
+            },
         ],
     }
     .execute()
