@@ -1,6 +1,7 @@
 use std::process;
 
 use crate::{
+    args::Args,
     commands::{ai_generate_commit, exec_commit},
     git::{self, check_in_git_repo, fetch},
     input,
@@ -10,11 +11,11 @@ use crate::{
 };
 use anyhow::Result;
 
-pub fn run() -> Result<()> {
+pub fn run(args: Args) -> Result<()> {
     if !check_in_git_repo()? {
         uninitialized()?;
     }
-    let remote_info = get_upstream()?;
+    let remote_info = get_upstream(args.auto_upstream)?;
     loop {
         output_notice("Checking git status...")?;
 
@@ -293,9 +294,16 @@ fn create_branch() -> Result<()> {
         .and_then(|branch_name| git::create_checkout(&branch_name))
 }
 
-fn get_upstream() -> Result<Option<GitRemoteBranch>> {
+fn get_upstream(auto_upstream: bool) -> Result<Option<GitRemoteBranch>> {
     let upstream = git::get_upstream()?;
     if let Some(upstream) = upstream {
+        if auto_upstream {
+            let sp: Vec<_> = upstream.splitn(2, "/").collect();
+            return Ok(Some(GitRemoteBranch {
+                remote: sp[0].to_string(),
+                branch: sp[1].to_string(),
+            }));
+        }
         Options {
             prompt: &format!("There is an upstream: {}, do you wanna use it?", upstream),
             options: vec![
@@ -319,8 +327,31 @@ fn get_upstream() -> Result<Option<GitRemoteBranch>> {
         }
         .execute()
     } else {
+        if auto_upstream {
+            if let Some(remote_branch) = contain_same_branch()? {
+                return Ok(Some(remote_branch));
+            }
+        }
         set_upstream()
     }
+}
+
+fn contain_same_branch() -> Result<Option<GitRemoteBranch>> {
+    let local_branch = git::get_current_branch()?;
+    let remotes = git::get_remote_names()?;
+    if remotes.is_empty() {
+        return Ok(None);
+    }
+    for remote in remotes {
+        let branches = git::get_branches(Some(remote.clone()))?;
+        if branches.contains(&local_branch) {
+            return Ok(Some(GitRemoteBranch {
+                remote: remote.clone(),
+                branch: local_branch.clone(),
+            }));
+        }
+    }
+    Ok(None)
 }
 
 fn set_upstream() -> Result<Option<GitRemoteBranch>> {

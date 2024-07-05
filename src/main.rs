@@ -1,5 +1,7 @@
-use gitflow::flow;
+use gitflow::{args::Args, flow};
 
 fn main() {
-    flow::run().unwrap();
+    let args = Args::new();
+
+    flow::run(args).unwrap();
 }
