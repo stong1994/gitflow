@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::git::{diff_remote_stat, git_status_short, has_commit_to_push};
+use crate::git::{git_status_short, has_commit_to_push};
 
 #[derive(Clone, Debug)]
 pub struct GitRemoteBranch {

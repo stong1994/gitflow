@@ -340,14 +340,14 @@ pub fn has_commit_to_push(remote: String, branch: String) -> Result<bool> {
     let arg = &format!("{}/{}..{}", remote, branch, branch);
     let output = Command::new("git")
         .arg("log")
-        .arg("--online")
+        .arg("--oneline")
         .arg(arg)
         .output()
         .context("Failed to execute git log --online")?;
-    command_output(Some(&format!("git log --online {}", arg)), output.clone())?;
+    command_output(Some(&format!("git log --oneline {}", arg)), output.clone())?;
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        bail!("Failed to execute git log --online: {}", stderr);
+        bail!("Failed to execute git log --oneline: {}", stderr);
     }
     Ok(!output.stdout.is_empty())
 }
