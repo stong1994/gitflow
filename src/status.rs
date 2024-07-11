@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::git::{diff_remote_stat, git_status_short};
+use crate::git::{diff_remote_stat, git_status_short, has_commit_to_push};
 
 #[derive(Clone, Debug)]
 pub struct GitRemoteBranch {
@@ -32,7 +32,7 @@ impl GitStatus {
         let mut staged = false;
         let mut unstaged = false;
         let mut need_resolve = false;
-        let mut has_commit_to_push = false;
+        let mut has_local_commit_to_push = false;
 
         for line in lines {
             let (first, second) = (&line[0..1], &line[1..2]);
@@ -51,14 +51,14 @@ impl GitStatus {
         }
 
         if let Some(remote_branch) = remote_branch {
-            let diff = diff_remote_stat(remote_branch.remote, remote_branch.branch)?;
-            has_commit_to_push = !diff.is_empty();
+            has_local_commit_to_push =
+                has_commit_to_push(remote_branch.remote, remote_branch.branch)?;
         }
 
         if need_resolve {
             Ok(Self::Conflicted)
         } else {
-            match (has_commit_to_push, staged, unstaged) {
+            match (has_local_commit_to_push, staged, unstaged) {
                 (false, false, false) => Ok(Self::Clean),
                 (false, false, true) => Ok(Self::Unstaged),
                 (false, true, false) => Ok(Self::FullyStaged),

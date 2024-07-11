@@ -335,6 +335,23 @@ pub fn add_remote(name: &str, url: &str) -> Result<()> {
     Ok(())
 }
 
+pub fn has_commit_to_push(remote: String, branch: String) -> Result<bool> {
+    // The `git log --oneline origin/master..master` command shows commits that are in the local branch but not in the remote branch. If the output is empty, there are no commits to push.
+    let arg = &format!("{}/{}..{}", remote, branch, branch);
+    let output = Command::new("git")
+        .arg("log")
+        .arg("--online")
+        .arg(arg)
+        .output()
+        .context("Failed to execute git log --online")?;
+    command_output(Some(&format!("git log --online {}", arg)), output.clone())?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        bail!("Failed to execute git log --online: {}", stderr);
+    }
+    Ok(!output.stdout.is_empty())
+}
+
 pub fn diff_remote_stat(remote: String, branch: String) -> Result<String> {
     let output = Command::new("git")
         .arg("diff")
